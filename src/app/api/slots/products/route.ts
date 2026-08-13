@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
 
 // ดึงรายการสินค้าทั้งหมด
 export async function GET() {
-  const products = await prisma.product.findMany({
-    include: { seller: true, bids: true, offers: true },
-    orderBy: { createdAt: 'desc' },
-  });
-  return NextResponse.json(products);
+  try {
+    const products = await prisma.product.findMany({
+      include: { seller: true, bids: true, offers: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return NextResponse.json(products);
+  } catch (error: any) { // 👈 เติม : any
+    return NextResponse.json(
+      { error: 'ไม่สามารถดึงข้อมูลสินค้าได้' },
+      { status: 500 }
+    );
+  }
 }
 
 // เพิ่มสินค้าฝากขาย (หัก 1 Slot)
@@ -18,11 +28,14 @@ export async function POST(request: Request) {
     // เช็ก Slot ผู้ขาย
     const seller = await prisma.user.findUnique({ where: { id: sellerId } });
     if (!seller || seller.listingSlots < 1) {
-      return NextResponse.json({ error: 'Slot ไม่เพียงพอ กรุณาซื้อ Slot เพิ่ม (10฿/Slot)' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Slot ไม่เพียงพอ กรุณาซื้อ Slot เพิ่ม (10฿/Slot)' },
+        { status: 400 }
+      );
     }
 
     // หัก Slot และเพิ่มสินค้า
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => { // 👈 เติม : any
       await tx.user.update({
         where: { id: sellerId },
         data: { listingSlots: { decrement: 1 } },
@@ -45,8 +58,15 @@ export async function POST(request: Request) {
       });
     });
 
-    return NextResponse.json({ message: 'ลงขายสินค้าสำเร็จ (หัก 1 Slot เรียบร้อย)', product: result });
-  } catch (error) {
-    return NextResponse.json({ error: 'ไม่สามารถลงขายได้' }, { status: 500 });
+    return NextResponse.json({
+      message: 'ลงขายสินค้าสำเร็จ (หัก 1 Slot เรียบร้อย)',
+      product: result,
+    });
+  } catch (error: any) { // 👈 เติม : any
+    console.error('Create product error:', error);
+    return NextResponse.json(
+      { error: 'ไม่สามารถลงขายได้' },
+      { status: 500 }
+    );
   }
 }

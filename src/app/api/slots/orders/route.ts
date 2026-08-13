@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
 
 export async function POST(request: Request) {
   try {
@@ -6,7 +9,10 @@ export async function POST(request: Request) {
     const { productId, buyerId, shippingAddress, paymentMethod } = body;
 
     if (!productId || !shippingAddress) {
-      return NextResponse.json({ error: 'กรอกข้อมูลไม่ครบถ้วน' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'กรอกข้อมูลไม่ครบถ้วน' },
+        { status: 400 }
+      );
     }
 
     // 1. ลองค้นหาและบันทึกลง Database จริง (ถ้าเซ็ต DB ไว้แล้ว)
@@ -28,13 +34,16 @@ export async function POST(request: Request) {
           },
         });
 
-        return NextResponse.json({ message: 'สร้างคำสั่งซื้อเรียบร้อยแล้ว!', order });
+        return NextResponse.json({
+          message: 'สร้างคำสั่งซื้อเรียบร้อยแล้ว!',
+          order,
+        });
       }
-    } catch (dbError) {
-      console.log('ยังไม่ได้เชื่อมต่อ Database หรือไม่มีข้อมูลสินค้านี้ ใช้ระบบทดสอบแทน');
+    } catch (dbError: any) { // 👈 เติม : any ตรงนี้
+      console.log('ยังไม่ได้เชื่อมต่อ Database หรือไม่มีข้อมูลสินค้านี้ ใช้ระบบทดสอบแทน:', dbError?.message);
     }
 
-    // 2. ถ้ายังไม่มี Database ให้ตอบกลับเป็นออเดอร์ทดสอบสำเร็จทันที
+    // 2. ถ้ายังไม่มี Database หรือหาไม่เจอ ให้ตอบกลับเป็นออเดอร์ทดสอบสำเร็จทันที
     return NextResponse.json({
       message: 'สั่งซื้อสำเร็จ! (ทดสอบระบบ)',
       order: {
@@ -43,7 +52,10 @@ export async function POST(request: Request) {
       },
     });
 
-  } catch (error) {
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดภายในระบบ' }, { status: 500 });
+  } catch (error: any) { // 👈 เติม : any ตรงนี้
+    return NextResponse.json(
+      { error: 'เกิดข้อผิดพลาดภายในระบบ' },
+      { status: 500 }
+    );
   }
 }

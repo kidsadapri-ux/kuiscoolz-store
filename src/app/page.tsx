@@ -520,7 +520,11 @@ export default function HomePage() {
       </footer>
 
       {/* Modals */}
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <AuthModal 
+  isOpen={isAuthOpen} 
+  onClose={() => setIsAuthOpen(false)} 
+  onLoginSuccess={() => {}} 
+/>
       <BuyModal
         isOpen={isBuyModalOpen}
         onClose={() => setIsBuyModalOpen(false)}

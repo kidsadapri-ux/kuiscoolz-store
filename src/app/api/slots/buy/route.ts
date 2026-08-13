@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +22,7 @@ export async function POST(request: Request) {
     const totalAmount = slotsBought * PRICE_PER_SLOT;
 
     // 3. ทำงานพร้อมกัน 2 อย่างใน Database ( Transaction )
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // บันทึกประวัติการซื้อ Slot ลงตาราง SlotPurchase
       const purchase = await tx.slotPurchase.create({
         data: {
@@ -49,7 +52,7 @@ export async function POST(request: Request) {
       data: result,
     });
 
-  } catch (error) {
+  } catch (error: any) { // 👈 เติม : any ตรงนี้เพื่อป้องกัน TypeScript Error
     console.error('Error buying slots:', error);
     return NextResponse.json(
       { error: 'เกิดข้อผิดพลาดในการซื้อ Slot' },

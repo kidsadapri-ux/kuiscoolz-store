@@ -1,11 +1,9 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
   typescript: {
-    // 🟢 ข้ามการตรวจ Type ตอน Build บน Vercel
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // 🟢 ข้ามการตรวจ Linting ตอน Build บน Vercel
-    ignoreDuringBuilds: true,
-  },
 };
+
+export default nextConfig;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
@@ -7,21 +8,56 @@ export async function POST(request: Request) {
     const { auctionId, bidAmount, bidderName } = body;
 
     if (!auctionId || !bidAmount) {
-      return NextResponse.json({ error: 'ข้อมูลการเสนอราคาไม่ถูกต้อง' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ข้อมูลการเสนอราคาไม่ถูกต้อง' },
+        { status: 400 }
+      );
     }
 
-    // จำลองการบันทึกราคาประมูลใหม่
-    return NextResponse.json({
-      message: 'เคาะราคาประมูลสำเร็จ!',
-      bid: {
-        auctionId,
-        bidAmount: parseFloat(bidAmount),
-        bidderName: bidderName || 'ผู้ใช้ทั่วไป',
-        bidAt: new Date().toISOString(),
-      },
+    const parsedAmount = parseFloat(bidAmount);
+
+    // 🚀 ใช้ $transaction ป้องกันการประมูลชนกัน
+    const newBid = await prisma.$transaction(async (tx: any) => {
+      // 1. ค้นหาประมูลเพื่อเช็กราคาปัจจุบัน
+      const auction = await tx.auction.findUnique({
+        where: { id: auctionId },
+      });
+
+      if (!auction) {
+        throw new Error('ไม่พบรายการประมูลนี้');
+      }
+
+      if (parsedAmount <= auction.currentPrice) {
+        throw new Error('ราคาเสนอซื้อต้องสูงกว่าราคาปัจจุบัน');
+      }
+
+      // 2. อัปเดตราคาสูงสุดในรายการประมูล
+      await tx.auction.update({
+        where: { id: auctionId },
+        data: { currentPrice: parsedAmount },
+      });
+
+      // 3. บันทึกประวัติการเคาะราคา
+      const bidRecord = await tx.bid.create({
+        data: {
+          auctionId,
+          amount: parsedAmount,
+          bidderName: bidderName || 'ผู้ใช้ทั่วไป',
+        },
+      });
+
+      return bidRecord;
     });
 
-  } catch (error) {
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการเคาะราคา' }, { status: 500 });
+    return NextResponse.json({
+      message: 'เคาะราคาประมูลสำเร็จ!',
+      bid: newBid,
+    });
+  } catch (error: any) { // 👈 ใส่ : any เพื่อให้ TypeScript ไม่ฟ้อง Error
+    console.error('Bid Error:', error);
+    return NextResponse.json(
+      { error: error.message || 'เกิดข้อผิดพลาดในการเคาะราคา' },
+      { status: 500 }
+    );
   }
 }

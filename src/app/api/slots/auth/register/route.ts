@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
@@ -7,7 +10,10 @@ export async function POST(request: Request) {
 
     // 1. ตรวจสอบข้อมูลเบื้องต้น
     if (!email || !password || !fullName) {
-      return NextResponse.json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'กรุณากรอกข้อมูลให้ครบถ้วน' },
+        { status: 400 }
+      );
     }
 
     // 2. เช็กว่าอีเมลนี้เคยสมัครหรือยัง
@@ -16,7 +22,10 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json({ error: 'อีเมลนี้ถูกใช้งานแล้ว' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'อีเมลนี้ถูกใช้งานแล้ว' },
+        { status: 400 }
+      );
     }
 
     // 3. เข้ารหัส password เพื่อความปลอดภัย
@@ -35,9 +44,17 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       message: 'สมัครสมาชิกสำเร็จ!',
-      user: { id: newUser.id, email: newUser.email, name: newUser.fullName },
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.fullName,
+      },
     });
-  } catch (error) {
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการสมัครสมาชิก' }, { status: 500 });
+  } catch (error: any) { // 👈 เติม : any ตรงนี้เพื่อป้องกัน TypeScript Error
+    console.error('Register Error:', error);
+    return NextResponse.json(
+      { error: 'เกิดข้อผิดพลาดในการสมัครสมาชิก' },
+      { status: 500 }
+    );
   }
 }

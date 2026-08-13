@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
 
 export async function POST(request: Request) {
   try {
@@ -6,22 +9,31 @@ export async function POST(request: Request) {
     const { orderId, slipImage, paymentMethod } = body;
 
     if (!orderId) {
-      return NextResponse.json({ error: 'ไม่พบข้อมูลคำสั่งซื้อ' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ไม่พบข้อมูลคำสั่งซื้อ' },
+        { status: 400 }
+      );
     }
 
-    // จำลองการบันทึกข้อมูลสลิปชำระเงิน
-    return NextResponse.json({
-      message: 'แจ้งชำระเงินสำเร็จ! ผู้ขายจะตรวจสอบและจัดส่งสินค้าโดยเร็ว',
-      payment: {
-        orderId,
-        slipImage,
-        paymentMethod,
-        status: 'PENDING_VERIFICATION',
-        paidAt: new Date().toISOString(),
+    // อัปเดตสถานะการชำระเงินลง Database จริง
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'WAITING_FOR_VERIFICATION',
+        slipImage: slipImage || null,
+        paymentMethod: paymentMethod || 'TRANSFER',
       },
     });
 
-  } catch (error) {
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการส่งหลักฐานชำระเงิน' }, { status: 500 });
+    return NextResponse.json({
+      message: 'แจ้งชำระเงินสำเร็จ! ผู้ขายจะตรวจสอบและจัดส่งสินค้าโดยเร็ว',
+      payment: updatedOrder,
+    });
+  } catch (error: any) { // 👈 เติม : any ให้ TypeScript
+    console.error('Payment Notice Error:', error);
+    return NextResponse.json(
+      { error: 'เกิดข้อผิดพลาดในการส่งหลักฐานชำระเงิน' },
+      { status: 500 }
+    );
   }
 }
