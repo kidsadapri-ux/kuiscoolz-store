@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 
 // ดึงรายการสินค้าทั้งหมด
 export async function GET() {
