@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
 import { 
   LayoutDashboard, 
   Package, 
@@ -16,6 +17,11 @@ import {
   RefreshCw,
   Image as ImageIcon
 } from 'lucide-react';
+
+// เชื่อมต่อ Supabase Client โดยตรง
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Product {
   id: string;
@@ -49,15 +55,20 @@ export default function AdminPage() {
     description: '',
   });
 
-  // 1. ดึงข้อมูลสินค้าจาก Supabase
+  // 1. ดึงข้อมูลสินค้าจาก Supabase โดยตรง
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/slots/products', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        return;
       }
+      setProducts(data || []);
     } catch (err) {
       console.error('Failed to load products:', err);
     } finally {
@@ -69,7 +80,7 @@ export default function AdminPage() {
     fetchProducts();
   }, []);
 
-  // 2. ฟังก์ชันเพิ่มสินค้าใหม่ลง Supabase
+  // 2. ฟังก์ชันเพิ่มสินค้าใหม่ลง Supabase โดยตรง
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.price || !formData.image) {
@@ -78,56 +89,66 @@ export default function AdminPage() {
 
     setSaving(true);
     try {
-      const res = await fetch('/api/slots/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          price: Number(formData.price),
-          status: 'AVAILABLE',
-        }),
-      });
+      const { data, error } = await supabase
+        .from('products')
+        .insert([
+          {
+            title: formData.title,
+            brand: formData.brand || 'General',
+            price: Number(formData.price),
+            size: formData.size,
+            category: formData.category,
+            condition_grade: formData.conditionGrade,
+            image: formData.image,
+            description: formData.description,
+            status: 'AVAILABLE',
+          },
+        ])
+        .select();
 
-      if (res.ok) {
-        alert('✅ เพิ่มสินค้าลงระบบเรียบร้อยแล้ว!');
-        setFormData({
-          title: '',
-          brand: '',
-          price: '',
-          size: 'Free Size',
-          category: 'T-Shirt',
-          conditionGrade: 'GRADE_A',
-          image: '',
-          description: '',
-        });
-        setIsModalOpen(false);
-        fetchProducts();
-      } else {
-        const err = await res.json();
-        alert(`บันทึกไม่สำเร็จ: ${err.error || 'เกิดข้อผิดพลาด'}`);
+      if (error) {
+        alert(`บันทึกไม่สำเร็จ: ${error.message}`);
+        console.error(error);
+        return;
       }
-    } catch (error) {
-      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+
+      alert('✅ เพิ่มสินค้าลง Supabase เรียบร้อยแล้ว!');
+      setFormData({
+        title: '',
+        brand: '',
+        price: '',
+        size: 'Free Size',
+        category: 'T-Shirt',
+        conditionGrade: 'GRADE_A',
+        image: '',
+        description: '',
+      });
+      setIsModalOpen(false);
+      fetchProducts();
+    } catch (error: any) {
+      alert(`เกิดข้อผิดพลาด: ${error.message || 'ไม่สามารถบันทึกได้'}`);
     } finally {
       setSaving(false);
     }
   };
 
-  // 3. ฟังก์ชันเปลี่ยนสถานะสินค้า (AVAILABLE <-> SOLD_OUT)
+  // 3. ฟังก์ชันสลับสถานะสินค้า (AVAILABLE <-> SOLD_OUT)
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'AVAILABLE' ? 'SOLD_OUT' : 'AVAILABLE';
     try {
-      const res = await fetch('/api/slots/products', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: newStatus }),
-      });
+      const { error } = await supabase
+        .from('products')
+        .update({ status: newStatus })
+        .eq('id', id);
 
-      if (res.ok) {
-        setProducts((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, status: newStatus as any } : item))
-        );
+      if (error) {
+        alert(`อัปเดตไม่สำเร็จ: ${error.message}`);
+        return;
       }
+
+      setProducts((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, status: newStatus as any } : item))
+      );
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการอัปเดตสถานะ');
     }
@@ -370,7 +391,7 @@ export default function AdminPage() {
 
             <div className="border-b pb-3">
               <h3 className="text-lg font-black">ลงสินค้าใหม่เข้าร้าน</h3>
-              <p className="text-xs text-gray-400">ข้อมูลจะถูกส่งและบันทึกลง Supabase ทันที</p>
+              <p className="text-xs text-gray-400">ข้อมูลจะถูกบันทึกลง Supabase โดยตรงทันที</p>
             </div>
 
             <form onSubmit={handleCreateProduct} className="space-y-3 text-xs">
@@ -448,12 +469,23 @@ export default function AdminPage() {
                 />
               </div>
 
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">รายละเอียดสินค้า (ถ้ามี)</label>
+                <textarea
+                  rows={2}
+                  placeholder="รายละเอียดสภาพสินค้า..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full border rounded-xl p-2.5 focus:border-black outline-none"
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={saving}
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-md mt-4"
               >
-                {saving ? 'กำลังบันทึกลงฐานข้อมูล...' : 'ยืนยันลงสินค้า'}
+                {saving ? 'กำลังบันทึกลง Supabase...' : 'ยืนยันลงสินค้า'}
               </button>
             </form>
           </div>
