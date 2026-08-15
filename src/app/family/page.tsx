@@ -19,14 +19,10 @@ import {
 } from 'lucide-react';
 
 // ตัวช่วยสร้าง Supabase Client
-const getSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  if (!url || !key) {
-    console.error('Supabase URL หรือ Anon Key หายไป!');
-  }
-  return createClient(url, key);
-};
+const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iaHZ1eHZ0c2ZpaGRlbHFqem1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MTQ5MDMsImV4cCI6MjEwMjE5MDkwM30.kkVSeL3fK-V5dx0CQRdBRf1UZPd198cDNUrXEjik7qM';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Product {
   id: string;
