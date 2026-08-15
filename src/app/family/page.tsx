@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
           </p>
         </div>
         <Link
-          href="/admin/products/new"
+          href="/family/products/new"
           className="bg-black hover:bg-red-600 text-white font-black px-4 py-2.5 rounded-xl text-xs transition-colors flex items-center gap-1.5 uppercase shadow-md"
         >
           <PlusCircle className="w-4 h-4" /> ลงสินค้าใหม่
@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-black">
           <Link
-            href="/admin/products/new"
+            href="/family/products/new"
             className="p-4 bg-gray-50 border-2 border-gray-200 rounded-2xl hover:border-black transition-all flex items-center gap-3"
           >
             <PlusCircle className="w-6 h-6 text-red-600" />
@@ -66,7 +66,7 @@ export default function AdminDashboardPage() {
           </Link>
 
           <Link
-            href="/admin/products"
+            href="/family/products"
             className="p-4 bg-gray-50 border-2 border-gray-200 rounded-2xl hover:border-black transition-all flex items-center gap-3"
           >
             <Package className="w-6 h-6 text-blue-600" />
@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
           </Link>
 
           <Link
-            href="/admin/credits"
+            href="/family/credits"
             className="p-4 bg-gray-50 border-2 border-gray-200 rounded-2xl hover:border-black transition-all flex items-center gap-3"
           >
             <FileText className="w-6 h-6 text-emerald-600" />
