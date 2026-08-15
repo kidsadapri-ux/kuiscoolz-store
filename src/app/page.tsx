@@ -32,7 +32,8 @@ import {
   SearchX
 } from 'lucide-react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+// เชื่อมต่อ Supabase Client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://obhvuxvtsfihdelqjzmo.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -46,7 +47,6 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
   const [maxPrice, setMaxPrice] = useState<number | ''>('');
-  const [chestFilter, setChestFilter] = useState('');
   
   const [selectedBuyProduct, setSelectedBuyProduct] = useState<any>(null);
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
@@ -62,7 +62,7 @@ export default function HomePage() {
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
-  // ดึงสินค้าจาก Supabase โดยตรง
+  // ดึงสินค้าสดใหม่จาก Supabase
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -71,11 +71,13 @@ export default function HomePage() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (error) {
+        console.error('Supabase error:', error);
+      } else if (data) {
         setProducts(data);
       }
     } catch (err) {
-      console.error('Failed to fetch products:', err);
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -94,20 +96,24 @@ export default function HomePage() {
     }
   };
 
-  const hasActiveFilter = searchQuery || selectedCategory !== 'ALL' || selectedGrade !== 'ALL' || maxPrice !== '' || chestFilter !== '';
+  const hasActiveFilter = searchQuery || selectedCategory !== 'ALL' || selectedGrade !== 'ALL' || maxPrice !== '';
 
+  // ระบบกรองแบบยืดหยุ่น ป้องกันสินค้าหลุดหาย
   const filteredProducts = (products || []).filter((product: any) => {
     if (!product) return false;
-    const matchesSearch = 
-      (product.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.brand || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'ALL' || product.category === selectedCategory;
-    const grade = product.condition_grade || product.conditionGrade;
-    const matchesGrade = selectedGrade === 'ALL' || grade === selectedGrade;
-    const matchesPrice = maxPrice === '' || Number(product.price) <= Number(maxPrice);
-    const matchesChest = !chestFilter || (selectedCategory === 'Shoes' ? product.size?.startsWith(chestFilter) : selectedCategory === 'Pants' ? true : product.size?.startsWith(chestFilter));
+    
+    const titleMatch = (product.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const brandMatch = (product.brand || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !searchQuery || titleMatch || brandMatch;
 
-    return matchesSearch && matchesCategory && matchesGrade && matchesPrice && matchesChest;
+    const matchesCategory = selectedCategory === 'ALL' || product.category?.toLowerCase() === selectedCategory.toLowerCase();
+    
+    const grade = product.condition_grade || product.conditionGrade || 'GRADE_A';
+    const matchesGrade = selectedGrade === 'ALL' || grade === selectedGrade;
+
+    const matchesPrice = maxPrice === '' || Number(product.price || 0) <= Number(maxPrice);
+
+    return matchesSearch && matchesCategory && matchesGrade && matchesPrice;
   });
 
   return (
@@ -160,7 +166,7 @@ export default function HomePage() {
               href="/family"
               className="bg-black hover:bg-gray-800 active:scale-95 text-white font-black px-4 py-2 rounded-xl transition-all shadow-md flex items-center gap-1 uppercase tracking-wider"
             >
-              <Tag className="w-3.5 h-3.5 text-amber-400" /> ระบบหลังบ้าน (Family)
+              <Tag className="w-3.5 h-3.5 text-amber-400" /> จัดการหลังบ้าน (Family)
             </Link>
 
             {currentUser ? (
@@ -170,19 +176,10 @@ export default function HomePage() {
                 </span>
                 <span className="text-xs font-black line-clamp-1">{currentUser.name}</span>
 
-                {currentUser.role === 'SELLER' && (
-                  <Link
-                    href="/seller/orders"
-                    className="bg-gray-800 text-white text-[10px] font-black px-2 py-1 rounded-md transition-colors ml-1"
-                  >
-                    หลังบ้านผู้ขาย
-                  </Link>
-                )}
-
                 <button
                   onClick={() => setCurrentUser(null)}
                   title="ออกจากระบบ"
-                  className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                  className="text-gray-400 hover:text-red-500 p-1 transition-colors ml-1"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
@@ -202,11 +199,11 @@ export default function HomePage() {
       {/* Main Content Layout */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* Advanced Spec Filter */}
+        {/* Filter Section */}
         <section className="bg-white border-2 border-black rounded-3xl p-6 shadow-xl space-y-4 text-black relative">
           <div className="flex items-center justify-between border-b-2 border-black/10 pb-3">
             <h2 className="text-xs font-black text-black flex items-center gap-2 uppercase tracking-widest">
-              <SlidersHorizontal className="w-4 h-4 text-red-600" /> ค้นหาสเปกสัดส่วนวัดจริง & แบรนด์
+              <SlidersHorizontal className="w-4 h-4 text-red-600" /> ค้นหา & ตัวกรองสินค้า
             </h2>
             {hasActiveFilter && (
               <button
@@ -216,7 +213,6 @@ export default function HomePage() {
                   setSelectedCategory('ALL');
                   setSelectedGrade('ALL');
                   setMaxPrice('');
-                  setChestFilter('');
                 }}
                 className="text-xs text-red-600 hover:text-red-700 font-black flex items-center gap-1 uppercase tracking-wider"
               >
@@ -225,68 +221,21 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div className="space-y-1.5">
               <label className="font-black text-black block uppercase tracking-wider">หมวดหมู่สินค้า</label>
               <select
                 value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  setChestFilter('');
-                }}
+                onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full border-2 border-gray-200 rounded-xl p-3 font-extrabold text-black bg-white focus:outline-none focus:border-black transition-colors"
               >
                 <option value="ALL">ทุกหมวดหมู่</option>
-                <option value="Shirt">Shirt (เสื้อ)</option>
-                <option value="Outerwear">Outerwear (แจ็คเก็ต)</option>
+                <option value="Shirt">Shirt / T-Shirt (เสื้อ)</option>
+                <option value="Jacket">Jacket / Outerwear (แจ็คเก็ต)</option>
                 <option value="Pants">Pants (กางเกง)</option>
                 <option value="Shoes">Shoes (รองเท้า)</option>
               </select>
             </div>
-
-            {selectedCategory === 'Shoes' ? (
-              <div className="space-y-1.5">
-                <label className="font-black text-blue-600 block uppercase tracking-wider">ไซส์รองเท้า (EU)</label>
-                <select
-                  value={chestFilter}
-                  onChange={(e) => setChestFilter(e.target.value)}
-                  className="w-full border-2 border-blue-200 rounded-xl p-3 font-extrabold text-black bg-blue-50/50 focus:outline-none focus:border-blue-600 transition-colors"
-                >
-                  <option value="">ทุกไซส์รองเท้า</option>
-                  <option value="40">EU 40</option>
-                  <option value="41">EU 41</option>
-                  <option value="42">EU 42</option>
-                  <option value="42.5">EU 42.5</option>
-                  <option value="43">EU 43</option>
-                </select>
-              </div>
-            ) : selectedCategory === 'Pants' ? (
-              <div className="space-y-1.5">
-                <label className="font-black text-black block uppercase tracking-wider">รอบเอวสูงสุด (นิ้ว)</label>
-                <input
-                  type="number"
-                  placeholder='เช่น 32"'
-                  value={chestFilter}
-                  onChange={(e) => setChestFilter(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl p-3 font-extrabold text-black bg-white focus:outline-none focus:border-black transition-colors placeholder-gray-400"
-                />
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <label className="font-black text-black block uppercase tracking-wider">ไซส์เสื้อ (SIZE)</label>
-                <select
-                  value={chestFilter}
-                  onChange={(e) => setChestFilter(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl p-3 font-extrabold text-black bg-white focus:outline-none focus:border-black transition-colors"
-                >
-                  <option value="">ทุกไซส์เสื้อ</option>
-                  <option value="S">Size S (อก 36"-38")</option>
-                  <option value="M">Size M (อก 38"-40")</option>
-                  <option value="L">Size L (อก 40"-42")</option>
-                  <option value="XL">Size XL (อก 42"-44")</option>
-                </select>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <label className="font-black text-black block uppercase tracking-wider">เกรดสภาพสินค้า</label>
@@ -314,10 +263,10 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-black text-black block uppercase tracking-wider">ค้นหาแบรนด์/รุ่น</label>
+              <label className="font-black text-black block uppercase tracking-wider">ค้นหาชื่อ/แบรนด์</label>
               <input
                 type="text"
-                placeholder="เช่น Nike, Polo"
+                placeholder="เช่น Nike, Vintage"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full border-2 border-gray-200 rounded-xl p-3 font-extrabold text-black bg-white focus:outline-none focus:border-black transition-colors placeholder-gray-400"
@@ -325,43 +274,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
-        {/* Real-Time Live Auction Box */}
-        {auctionItem ? (
-          <section className="bg-white text-black border-2 border-black rounded-3xl p-6 md:p-8 shadow-xl space-y-6 relative overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-              <div className="space-y-3 text-center md:text-left">
-                <div className="inline-flex items-center gap-1.5 bg-black text-amber-400 font-black text-xs px-3.5 py-1.5 rounded-md uppercase tracking-wider">
-                  <Flame className="w-4 h-4 fill-amber-400 text-amber-400" /> REAL-TIME LIVE AUCTION
-                </div>
-                <h2 className="text-xl md:text-3xl font-black text-black italic tracking-tight uppercase">{auctionItem?.title}</h2>
-                <p className="text-xs text-gray-500 font-bold">{auctionItem?.description}</p>
-                
-                <div className="pt-2 flex items-baseline justify-center md:justify-start gap-3">
-                  <span className="text-xs text-gray-500 font-black uppercase tracking-wider">ราคาประมูลสูงสุดปัจจุบัน:</span>
-                  <span className="text-3xl md:text-4xl font-black text-black tracking-tight">
-                    ฿{Number(auctionItem?.currentBid || 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  setSelectedAuctionItem({
-                    id: auctionItem?.id,
-                    title: auctionItem?.title,
-                    currentBid: auctionItem?.currentBid,
-                    image: auctionItem?.image,
-                  });
-                  setIsAuctionModalOpen(true);
-                }}
-                className="w-full md:w-auto bg-black hover:bg-red-600 active:scale-95 text-white font-black px-8 py-4 rounded-xl text-xs transition-all hover:scale-105 flex items-center justify-center gap-2 shadow-lg uppercase tracking-wider"
-              >
-                <Gavel className="w-4 h-4 text-amber-400" /> เข้าร่วมเคาะราคาประมูล
-              </button>
-            </div>
-          </section>
-        ) : null}
 
         {/* Reviews Section */}
         <section className="bg-white border-2 border-black/10 rounded-3xl p-4 md:p-6 shadow-xl relative overflow-hidden">
@@ -379,7 +291,7 @@ export default function HomePage() {
               <h2 className="text-xl md:text-2xl font-black italic tracking-wider text-black flex items-center gap-2 uppercase">
                 <Sparkles className="w-5 h-5 text-red-600" /> สินค้าทั้งหมดในร้าน ({filteredProducts.length} ชิ้น)
               </h2>
-              <p className="text-xs text-black font-bold">สินค้าอัปเดตแบบ Real-time จากระบบฐานข้อมูล</p>
+              <p className="text-xs text-black font-bold">ข้อมูลดึงตรงจากฐานข้อมูลกลาง Supabase</p>
             </div>
             <Link href="/family" className="text-xs font-black text-red-600 hover:text-red-700 flex items-center gap-1 uppercase tracking-wider">
               จัดการหลังบ้าน <ArrowRight className="w-3.5 h-3.5" />
@@ -388,13 +300,19 @@ export default function HomePage() {
 
           {loading ? (
             <div className="text-center py-16 bg-white rounded-3xl border-2 border-gray-200">
-              <p className="text-xs font-bold text-gray-500">กำลังโหลดรายการสินค้า...</p>
+              <p className="text-xs font-bold text-gray-500">กำลังเชื่อมต่อฐานข้อมูลและโหลดรายการสินค้า...</p>
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-300 space-y-3">
               <SearchX className="w-12 h-12 text-gray-400 mx-auto" />
-              <h3 className="text-base font-black text-black uppercase">ไม่พบสินค้าในระบบ</h3>
-              <p className="text-xs text-gray-500 font-bold">ยังไม่มีสินค้าหรือสินค้าอาจถูกลบไปแล้ว</p>
+              <h3 className="text-base font-black text-black uppercase">ยังไม่มีสินค้าในร้าน</h3>
+              <p className="text-xs text-gray-500 font-bold">เข้าสู่ระบบหลังบ้านเพื่อเพิ่มสินค้าใหม่เข้าร้านได้เลยครับ</p>
+              <Link
+                href="/family"
+                className="inline-block bg-black text-white text-xs font-black px-5 py-2.5 rounded-xl shadow hover:bg-zinc-800"
+              >
+                ไปยังหน้าหลังบ้าน (Family)
+              </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
