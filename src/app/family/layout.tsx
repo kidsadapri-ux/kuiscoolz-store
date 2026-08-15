@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function AdminLayout({
   children,
@@ -12,11 +13,10 @@ export default function AdminLayout({
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 🔑 ตั้งรหัสผ่านเข้าหลังบ้านตรงนี้ (เปลี่ยนเป็นรหัสที่คุณต้องการได้เลย)
-  const ADMIN_PASSWORD = 'i die for family';
+  // 🔑 รหัสผ่านเข้าหลังบ้าน
+  const ADMIN_PASSWORD = 'idieforfamily';
 
   useEffect(() => {
-    // เช็กว่าเคยกรอกรหัสผ่านผ่านแล้วหรือยังใน Session นี้
     const authStatus = sessionStorage.getItem('admin_authenticated');
     if (authStatus === 'true') {
       setIsAuthenticated(true);
@@ -44,12 +44,12 @@ export default function AdminLayout({
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p className="text-zinc-500">กำลังตรวจสอบสิทธิ์...</p>
+        <p className="text-zinc-500">กำลังโหลด...</p>
       </div>
     );
   }
 
-  // 🔒 ถ้ายังไม่ผ่านการใส่รหัส ให้แสดงหน้าจอนี้
+  // 🔒 หน้ากรอกรหัสผ่าน
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
@@ -93,18 +93,86 @@ export default function AdminLayout({
     );
   }
 
-  // ✅ เมื่อใส่รหัสผ่านถูกต้อง จะแสดงหน้า Admin ปกติ พร้อมปุ่มล็อกหน้าจอด้านบนขวา
+  // ✅ โครงสร้าง Layout เดิม (Sidebar ซ้าย + Header บน + เนื้อหาตรงกลาง)
   return (
-    <div className="relative min-h-screen bg-zinc-950">
-      <div className="absolute top-4 right-4 z-50">
-        <button
-          onClick={handleLogout}
-          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition-all shadow-md"
-        >
-          🔒 ล็อกหน้าจอ (Logout)
-        </button>
+    <div className="min-h-screen bg-zinc-100 flex text-zinc-900">
+      {/* 🟢 แถบ Sidebar ด้านซ้ายสีดำ */}
+      <aside className="w-64 bg-black text-white flex flex-col justify-between p-6 shrink-0 min-h-screen">
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-2xl font-black italic tracking-wider text-white">
+              KUISCOOLZ
+            </h1>
+            <p className="text-[10px] text-zinc-400 tracking-widest font-bold mt-0.5">
+              ADMIN CONTROL CENTER
+            </p>
+          </div>
+
+          {/* รายการเมนู */}
+          <nav className="space-y-2 text-sm font-medium">
+            <Link
+              href="/family"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900 text-white font-bold border border-zinc-800 hover:bg-zinc-800 transition-all"
+            >
+              <span>📊</span> ภาพรวม (DASHBOARD)
+            </Link>
+            <Link
+              href="/family/products"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
+            >
+              <span>📦</span> จัดการสินค้าทั้งหมด
+            </Link>
+            <Link
+              href="/family/auction"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
+            >
+              <span>🔨</span> จัดการระบบประมูล
+            </Link>
+            <Link
+              href="/family/credits"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
+            >
+              <span>💳</span> จัดการสลิปเครดิต
+            </Link>
+          </nav>
+        </div>
+
+        <div className="space-y-3">
+          <Link
+            href="/"
+            className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all"
+          >
+            🏠 กลับไปหน้าร้านค้า
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="w-full py-2 px-4 rounded-xl bg-red-950/40 border border-red-900/50 text-xs text-red-400 hover:bg-red-900/60 transition-all"
+          >
+            🔒 ล็อกหน้าจอ (Logout)
+          </button>
+        </div>
+      </aside>
+
+      {/* ⚪ พื้นที่เนื้อหาหลักด้านขวา */}
+      <div className="flex-1 flex flex-col min-w-0 bg-white">
+        {/* Header แถบด้านบน */}
+        <header className="h-16 border-b border-zinc-200 px-8 flex items-center justify-between bg-white shrink-0">
+          <div className="text-xs text-zinc-500 font-medium">
+            ระบบจัดการหลังบ้าน • <span className="font-bold text-zinc-800">KUISCOOLZ OFFICIAL</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1 border border-emerald-200">
+              🛡️ ADMIN VERIFIED
+            </span>
+            <span className="text-xs font-bold text-zinc-700">เจ้าของร้าน</span>
+          </div>
+        </header>
+
+        {/* หน้า Page ย่อย */}
+        <main className="p-8 flex-1 overflow-auto bg-zinc-50/50">
+          {children}
+        </main>
       </div>
-      {children}
     </div>
   );
 }
