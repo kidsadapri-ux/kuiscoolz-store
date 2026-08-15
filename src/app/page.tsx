@@ -2,9 +2,9 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useStore } from './context/StoreContext';
+import { createClient } from '@supabase/supabase-js';
 import AuthModal from './AuthModal';
 import BuyModal from './BuyModal';
 import OfferModal from './OfferModal';
@@ -32,10 +32,14 @@ import {
   SearchX
 } from 'lucide-react';
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 export default function HomePage() {
-  const store = useStore();
-  const products = store?.products || [];
-  const auctionItem = store?.auctionItem || null;
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [auctionItem, setAuctionItem] = useState<any>(null);
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,6 +62,29 @@ export default function HomePage() {
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
+  // ดึงสินค้าจาก Supabase โดยตรง
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setProducts(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   const toggleWishlist = (product: any) => {
     if (!product?.id) return;
     if ((wishlist || []).some((item) => item?.id === product.id)) {
@@ -75,7 +102,8 @@ export default function HomePage() {
       (product.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (product.brand || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'ALL' || product.category === selectedCategory;
-    const matchesGrade = selectedGrade === 'ALL' || product.conditionGrade === selectedGrade;
+    const grade = product.condition_grade || product.conditionGrade;
+    const matchesGrade = selectedGrade === 'ALL' || grade === selectedGrade;
     const matchesPrice = maxPrice === '' || Number(product.price) <= Number(maxPrice);
     const matchesChest = !chestFilter || (selectedCategory === 'Shoes' ? product.size?.startsWith(chestFilter) : selectedCategory === 'Pants' ? true : product.size?.startsWith(chestFilter));
 
@@ -129,10 +157,10 @@ export default function HomePage() {
             </Link>
 
             <Link
-              href="/seller/slots"
+              href="/family"
               className="bg-black hover:bg-gray-800 active:scale-95 text-white font-black px-4 py-2 rounded-xl transition-all shadow-md flex items-center gap-1 uppercase tracking-wider"
             >
-              <Tag className="w-3.5 h-3.5 text-amber-400" /> ฝากขาย (10B/Slot)
+              <Tag className="w-3.5 h-3.5 text-amber-400" /> ระบบหลังบ้าน (Family)
             </Link>
 
             {currentUser ? (
@@ -332,29 +360,8 @@ export default function HomePage() {
                 <Gavel className="w-4 h-4 text-amber-400" /> เข้าร่วมเคาะราคาประมูล
               </button>
             </div>
-
-            <div className="pt-4 border-t border-gray-100 flex flex-wrap justify-center gap-4 text-xs font-black text-black">
-              <div className="bg-gray-100 border border-gray-200 px-4 py-2.5 rounded-xl flex items-center gap-2">
-                <Tag className="w-4 h-4 text-amber-500" />
-                <span>ฝากขาย 10 บาท/Slot</span>
-              </div>
-              <div className="bg-gray-100 border border-gray-200 px-4 py-2.5 rounded-xl flex items-center gap-2">
-                <Handshake className="w-4 h-4 text-blue-600" />
-                <span>ต่อรองราคาตรงได้</span>
-              </div>
-              <div className="bg-gray-100 border border-gray-200 px-4 py-2.5 rounded-xl flex items-center gap-2">
-                <Gavel className="w-4 h-4 text-purple-600" />
-                <span>ระบบประมูล REAL-TIME</span>
-              </div>
-            </div>
           </section>
-        ) : (
-          <section className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-3xl p-8 text-center space-y-2">
-            <Gavel className="w-8 h-8 text-gray-400 mx-auto" />
-            <h3 className="text-sm font-black uppercase text-black">ยังไม่มีรายการประมูลสดในขณะนี้</h3>
-            <p className="text-xs text-gray-500 font-bold">โปรดติดตามรอบการเปิดประมูลสินค้า Rare Items ครั้งถัดไป</p>
-          </section>
-        )}
+        ) : null}
 
         {/* Reviews Section */}
         <section className="bg-white border-2 border-black/10 rounded-3xl p-4 md:p-6 shadow-xl relative overflow-hidden">
@@ -370,127 +377,136 @@ export default function HomePage() {
           <div className="flex justify-between items-end border-b border-gray-200 pb-4">
             <div>
               <h2 className="text-xl md:text-2xl font-black italic tracking-wider text-black flex items-center gap-2 uppercase">
-                <Sparkles className="w-5 h-5 text-red-600" /> พื้นที่วางสินค้า ({filteredProducts.length} ชิ้น)
+                <Sparkles className="w-5 h-5 text-red-600" /> สินค้าทั้งหมดในร้าน ({filteredProducts.length} ชิ้น)
               </h2>
-              <p className="text-xs text-black font-bold">สินค้ามือสองสภาพดี ถ่ายสเปกวัดจริงจากตัวจริงทุกชิ้น</p>
+              <p className="text-xs text-black font-bold">สินค้าอัปเดตแบบ Real-time จากระบบฐานข้อมูล</p>
             </div>
-            <Link href="/products" className="text-xs font-black text-red-600 hover:text-red-700 flex items-center gap-1 uppercase tracking-wider">
-              ดูสินค้าทั้งหมด <ArrowRight className="w-3.5 h-3.5" />
+            <Link href="/family" className="text-xs font-black text-red-600 hover:text-red-700 flex items-center gap-1 uppercase tracking-wider">
+              จัดการหลังบ้าน <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {filteredProducts.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-16 bg-white rounded-3xl border-2 border-gray-200">
+              <p className="text-xs font-bold text-gray-500">กำลังโหลดรายการสินค้า...</p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-300 space-y-3">
               <SearchX className="w-12 h-12 text-gray-400 mx-auto" />
               <h3 className="text-base font-black text-black uppercase">ไม่พบสินค้าในระบบ</h3>
-              <p className="text-xs text-gray-500 font-bold">สินค้าอาจถูกลบหรือขายหมดแล้วครับ</p>
+              <p className="text-xs text-gray-500 font-bold">ยังไม่มีสินค้าหรือสินค้าอาจถูกลบไปแล้ว</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredProducts.map((product: any) => (
-                <div key={product.id} className="bg-white rounded-3xl border-2 border-gray-200 overflow-hidden hover:border-black transition-all duration-300 flex flex-col justify-between group">
-                  
-                  <div>
-                    <div className="relative aspect-square bg-gray-100 overflow-hidden">
-                      <img
-                        src={product.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80'}
-                        alt={product.title || 'Product'}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      
-                      <div className="absolute top-3 left-3 bg-black text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">
-                        {product.conditionGrade === 'GRADE_S' && <span className="text-amber-400">เกรด S (เหมือนใหม่)</span>}
-                        {product.conditionGrade === 'GRADE_A' && <span className="text-emerald-400">เกรด A (สภาพดี)</span>}
-                        {product.conditionGrade === 'GRADE_B' && <span className="text-blue-400">เกรด B (มีร่องรอย)</span>}
-                        {!['GRADE_S', 'GRADE_A', 'GRADE_B'].includes(product.conditionGrade) && <span className="text-zinc-300">สภาพดี</span>}
-                      </div>
+              {filteredProducts.map((product: any) => {
+                const grade = product.condition_grade || product.conditionGrade;
+                const isSoldOut = product.status === 'SOLD_OUT';
 
-                      {product.status === 'SOLD_OUT' && (
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
-                          <span className="bg-red-600 text-white font-black text-xs px-4 py-1.5 rounded-xl uppercase tracking-widest border border-white">
-                            SOLD OUT
-                          </span>
+                return (
+                  <div key={product.id} className="bg-white rounded-3xl border-2 border-gray-200 overflow-hidden hover:border-black transition-all duration-300 flex flex-col justify-between group">
+                    
+                    <div>
+                      <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                        <img
+                          src={product.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80'}
+                          alt={product.title || 'Product'}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        
+                        <div className="absolute top-3 left-3 bg-black text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                          {grade === 'GRADE_S' && <span className="text-amber-400">เกรด S (เหมือนใหม่)</span>}
+                          {grade === 'GRADE_A' && <span className="text-emerald-400">เกรด A (สภาพดี)</span>}
+                          {grade === 'GRADE_B' && <span className="text-blue-400">เกรด B (มีร่องรอย)</span>}
+                          {!['GRADE_S', 'GRADE_A', 'GRADE_B'].includes(grade) && <span className="text-zinc-300">สภาพดี</span>}
                         </div>
-                      )}
+
+                        {isSoldOut && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
+                            <span className="bg-red-600 text-white font-black text-xs px-4 py-1.5 rounded-xl uppercase tracking-widest border border-white">
+                              SOLD OUT
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 space-y-2.5">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          {product.brand || 'General'} • {product.category || 'Fashion'}
+                        </div>
+                        <h3 className="font-extrabold text-black text-sm line-clamp-2 leading-snug">
+                          {product.title}
+                        </h3>
+                        <div className="text-xs text-black font-black bg-gray-100 p-2.5 rounded-xl border border-gray-200">
+                          📏 สเปก: {product.size || 'Free Size'}
+                        </div>
+                        <div className="text-xl font-black text-black tracking-tight pt-1">
+                          ฿{Number(product.price || 0).toLocaleString()}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="p-4 space-y-2.5">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        {product.brand || 'General'} • {product.category || 'Fashion'}
-                      </div>
-                      <h3 className="font-extrabold text-black text-sm line-clamp-2 leading-snug">
-                        {product.title}
-                      </h3>
-                      <div className="text-xs text-black font-black bg-gray-100 p-2.5 rounded-xl border border-gray-200">
-                        📏 สเปก: {product.size || 'Free Size'}
-                      </div>
-                      <div className="text-xl font-black text-black tracking-tight pt-1">
-                        ฿{Number(product.price || 0).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 pt-0 grid grid-cols-6 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedChatProduct(product);
-                        setIsChatModalOpen(true);
-                      }}
-                      className="col-span-1 bg-white hover:bg-gray-100 text-black font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center border-2 border-gray-200 active:scale-95"
-                      title="ทักแชตคุยกับผู้ขาย"
-                    >
-                      <MessageCircle className="w-4 h-4 text-blue-600" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => toggleWishlist(product)}
-                      className="col-span-1 bg-white hover:bg-gray-100 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center border-2 border-gray-200 active:scale-95"
-                      title="บันทึกสินค้าที่ถูกใจ"
-                    >
-                      <Heart
-                        className={`w-4 h-4 ${
-                          (wishlist || []).some((item) => item?.id === product.id)
-                            ? 'text-red-600 fill-red-600'
-                            : 'text-gray-400'
-                        }`}
-                      />
-                    </button>
-
-                    {product.allowOffers ? (
+                    <div className="p-4 pt-0 grid grid-cols-6 gap-1.5">
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedOfferProduct(product);
-                          setIsOfferModalOpen(true);
+                          setSelectedChatProduct(product);
+                          setIsChatModalOpen(true);
                         }}
-                        disabled={product.status === 'SOLD_OUT'}
-                        className="col-span-2 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-blue-700 border-2 border-blue-200 font-black py-2.5 rounded-xl text-[11px] transition-all flex items-center justify-center gap-1 active:scale-95"
+                        className="col-span-1 bg-white hover:bg-gray-100 text-black font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center border-2 border-gray-200 active:scale-95"
+                        title="ทักแชตคุยกับผู้ขาย"
                       >
-                        <Handshake className="w-3.5 h-3.5" /> ต่อรอง
+                        <MessageCircle className="w-4 h-4 text-blue-600" />
                       </button>
-                    ) : (
-                      <div className="col-span-2 flex items-center justify-center bg-gray-100 text-gray-400 font-bold text-[10px] rounded-xl border-2 border-gray-200">
-                        ราคาขายสุทธิ
-                      </div>
-                    )}
-                    
-                    <button
-                      type="button"
-                      disabled={product.status === 'SOLD_OUT'}
-                      onClick={() => {
-                        setSelectedBuyProduct(product);
-                        setIsBuyModalOpen(true);
-                      }}
-                      className="col-span-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-black py-2.5 rounded-xl text-xs transition-all shadow-md uppercase tracking-wider"
-                    >
-                      {product.status === 'SOLD_OUT' ? 'หมดแล้ว' : 'สั่งซื้อ'}
-                    </button>
-                  </div>
 
-                </div>
-              ))}
+                      <button
+                        type="button"
+                        onClick={() => toggleWishlist(product)}
+                        className="col-span-1 bg-white hover:bg-gray-100 font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center border-2 border-gray-200 active:scale-95"
+                        title="บันทึกสินค้าที่ถูกใจ"
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${
+                            (wishlist || []).some((item) => item?.id === product.id)
+                              ? 'text-red-600 fill-red-600'
+                              : 'text-gray-400'
+                          }`}
+                        />
+                      </button>
+
+                      {product.allow_offers || product.allowOffers ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedOfferProduct(product);
+                            setIsOfferModalOpen(true);
+                          }}
+                          disabled={isSoldOut}
+                          className="col-span-2 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 text-blue-700 border-2 border-blue-200 font-black py-2.5 rounded-xl text-[11px] transition-all flex items-center justify-center gap-1 active:scale-95"
+                        >
+                          <Handshake className="w-3.5 h-3.5" /> ต่อรอง
+                        </button>
+                      ) : (
+                        <div className="col-span-2 flex items-center justify-center bg-gray-100 text-gray-400 font-bold text-[10px] rounded-xl border-2 border-gray-200">
+                          ราคาขายสุทธิ
+                        </div>
+                      )}
+                      
+                      <button
+                        type="button"
+                        disabled={isSoldOut}
+                        onClick={() => {
+                          setSelectedBuyProduct(product);
+                          setIsBuyModalOpen(true);
+                        }}
+                        className="col-span-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-black py-2.5 rounded-xl text-xs transition-all shadow-md uppercase tracking-wider"
+                      >
+                        {isSoldOut ? 'หมดแล้ว' : 'สั่งซื้อ'}
+                      </button>
+                    </div>
+
+                  </div>
+                );
+              })}
             </div>
           )}
 
