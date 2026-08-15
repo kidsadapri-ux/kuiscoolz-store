@@ -17,6 +17,7 @@ interface BuyModalProps {
 }
 
 export default function BuyModal({ isOpen, onClose, onSuccessPayment, product }: BuyModalProps) {
+  if (!isOpen) return null;
   const [address, setAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('PROMPTPAY');
   const [loading, setLoading] = useState(false);

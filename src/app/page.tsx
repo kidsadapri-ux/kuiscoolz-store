@@ -1,8 +1,10 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import Link from 'next/link';
-import { useStore } from './context/StoreContext'; // 🟢 ดึง Context
+import { useStore } from './context/StoreContext';
 import AuthModal from './AuthModal';
 import BuyModal from './BuyModal';
 import OfferModal from './OfferModal';
@@ -31,8 +33,9 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
-  // 🟢 ดึงข้อมูลสินค้าจาก Store Context จริง (เพื่อให้เชื่อมกับหลังบ้าน)
-  const { products, auctionItem } = useStore();
+  const store = useStore();
+  const products = store?.products || [];
+  const auctionItem = store?.auctionItem || null;
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,39 +59,24 @@ export default function HomePage() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
   const toggleWishlist = (product: any) => {
-    if (wishlist.some((item) => item.id === product.id)) {
-      setWishlist(wishlist.filter((item) => item.id !== product.id));
+    if (!product?.id) return;
+    if ((wishlist || []).some((item) => item?.id === product.id)) {
+      setWishlist((wishlist || []).filter((item) => item?.id !== product.id));
     } else {
-      setWishlist([...wishlist, product]);
+      setWishlist([...(wishlist || []), product]);
     }
-  };
-
-  const MOCK_AUCTION_ITEM = {
-    id: 'auc-001',
-    title: 'เสื้อยืด Vintage NIRVANA Heart Shaped Box 90s Original Giant Tag',
-    brand: 'NIRVANA VINTAGE',
-    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80',
-    startingPrice: 5000,
-    currentBid: 8500,
-    minBidStep: 100,
-    endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    bidHistory: [
-      { id: 'b1', bidderName: 'นักสะสม Vintage BKK', amount: 8500, time: '5 นาทีที่แล้ว' },
-      { id: 'b2', bidderName: 'สายวินเทจ บึงกาฬ', amount: 8400, time: '12 นาทีที่แล้ว' },
-      { id: 'b3', bidderName: 'Collector90s', amount: 8000, time: '30 นาทีที่แล้ว' },
-    ],
   };
 
   const hasActiveFilter = searchQuery || selectedCategory !== 'ALL' || selectedGrade !== 'ALL' || maxPrice !== '' || chestFilter !== '';
 
-  // 🟢 กรองสินค้าจาก State กลาง (ถ้าโดนลบจะหายไปทันที)
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = (products || []).filter((product: any) => {
+    if (!product) return false;
     const matchesSearch = 
-      product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchQuery.toLowerCase());
+      (product.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.brand || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'ALL' || product.category === selectedCategory;
     const matchesGrade = selectedGrade === 'ALL' || product.conditionGrade === selectedGrade;
-    const matchesPrice = maxPrice === '' || product.price <= Number(maxPrice);
+    const matchesPrice = maxPrice === '' || Number(product.price) <= Number(maxPrice);
     const matchesChest = !chestFilter || (selectedCategory === 'Shoes' ? product.size?.startsWith(chestFilter) : selectedCategory === 'Pants' ? true : product.size?.startsWith(chestFilter));
 
     return matchesSearch && matchesCategory && matchesGrade && matchesPrice && matchesChest;
@@ -129,9 +117,9 @@ export default function HomePage() {
               title="สินค้าที่ถูกใจ"
             >
               <Heart className="w-4 h-4 text-red-600 fill-red-600" />
-              {wishlist.length > 0 && (
+              {(wishlist || []).length > 0 && (
                 <span className="absolute -top-2 -right-2 bg-black text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center">
-                  {wishlist.length}
+                  {(wishlist || []).length}
                 </span>
               )}
             </button>
@@ -150,7 +138,7 @@ export default function HomePage() {
             {currentUser ? (
               <div className="flex items-center gap-2 bg-black text-white pl-3 py-1.5 pr-2 rounded-xl font-extrabold">
                 <span className="w-6 h-6 bg-red-600 text-white rounded-md flex items-center justify-center font-black text-[10px]">
-                  {currentUser.name.charAt(0).toUpperCase()}
+                  {currentUser.name?.charAt(0)?.toUpperCase()}
                 </span>
                 <span className="text-xs font-black line-clamp-1">{currentUser.name}</span>
 
@@ -186,7 +174,7 @@ export default function HomePage() {
       {/* Main Content Layout */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* กล่องที่ 1: Advanced Spec Filter */}
+        {/* Advanced Spec Filter */}
         <section className="bg-white border-2 border-black rounded-3xl p-6 shadow-xl space-y-4 text-black relative">
           <div className="flex items-center justify-between border-b-2 border-black/10 pb-3">
             <h2 className="text-xs font-black text-black flex items-center gap-2 uppercase tracking-widest">
@@ -310,7 +298,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ⬛️ กล่องที่ 2: Real-Time Live Auction Box */}
+        {/* Real-Time Live Auction Box */}
         {auctionItem ? (
           <section className="bg-white text-black border-2 border-black rounded-3xl p-6 md:p-8 shadow-xl space-y-6 relative overflow-hidden">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
@@ -318,13 +306,13 @@ export default function HomePage() {
                 <div className="inline-flex items-center gap-1.5 bg-black text-amber-400 font-black text-xs px-3.5 py-1.5 rounded-md uppercase tracking-wider">
                   <Flame className="w-4 h-4 fill-amber-400 text-amber-400" /> REAL-TIME LIVE AUCTION
                 </div>
-                <h2 className="text-xl md:text-3xl font-black text-black italic tracking-tight uppercase">{auctionItem.title}</h2>
-                <p className="text-xs text-gray-500 font-bold">{auctionItem.description}</p>
+                <h2 className="text-xl md:text-3xl font-black text-black italic tracking-tight uppercase">{auctionItem?.title}</h2>
+                <p className="text-xs text-gray-500 font-bold">{auctionItem?.description}</p>
                 
                 <div className="pt-2 flex items-baseline justify-center md:justify-start gap-3">
                   <span className="text-xs text-gray-500 font-black uppercase tracking-wider">ราคาประมูลสูงสุดปัจจุบัน:</span>
                   <span className="text-3xl md:text-4xl font-black text-black tracking-tight">
-                    ฿{auctionItem.currentBid.toLocaleString()}
+                    ฿{Number(auctionItem?.currentBid || 0).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -332,10 +320,10 @@ export default function HomePage() {
               <button
                 onClick={() => {
                   setSelectedAuctionItem({
-                    id: auctionItem.id,
-                    title: auctionItem.title,
-                    currentBid: auctionItem.currentBid,
-                    image: auctionItem.image,
+                    id: auctionItem?.id,
+                    title: auctionItem?.title,
+                    currentBid: auctionItem?.currentBid,
+                    image: auctionItem?.image,
                   });
                   setIsAuctionModalOpen(true);
                 }}
@@ -368,14 +356,14 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* กล่องที่ 3: Trust & Reviews (สลิปโอนเงิน) */}
+        {/* Reviews Section */}
         <section className="bg-white border-2 border-black/10 rounded-3xl p-4 md:p-6 shadow-xl relative overflow-hidden">
           <ProductReviews />
         </section>
 
       </main>
 
-      {/* พื้นที่วางสินค้า */}
+      {/* Product Grid */}
       <section className="bg-gray-50 py-12 border-t-2 border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           
@@ -391,7 +379,6 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* กรณีค้นหาไม่เจอ / หรือโดนลบจนหมด */}
           {filteredProducts.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-300 space-y-3">
               <SearchX className="w-12 h-12 text-gray-400 mx-auto" />
@@ -400,14 +387,14 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product: any) => (
                 <div key={product.id} className="bg-white rounded-3xl border-2 border-gray-200 overflow-hidden hover:border-black transition-all duration-300 flex flex-col justify-between group">
                   
                   <div>
                     <div className="relative aspect-square bg-gray-100 overflow-hidden">
                       <img
-                        src={product.image}
-                        alt={product.title}
+                        src={product.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80'}
+                        alt={product.title || 'Product'}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       
@@ -415,6 +402,7 @@ export default function HomePage() {
                         {product.conditionGrade === 'GRADE_S' && <span className="text-amber-400">เกรด S (เหมือนใหม่)</span>}
                         {product.conditionGrade === 'GRADE_A' && <span className="text-emerald-400">เกรด A (สภาพดี)</span>}
                         {product.conditionGrade === 'GRADE_B' && <span className="text-blue-400">เกรด B (มีร่องรอย)</span>}
+                        {!['GRADE_S', 'GRADE_A', 'GRADE_B'].includes(product.conditionGrade) && <span className="text-zinc-300">สภาพดี</span>}
                       </div>
 
                       {product.status === 'SOLD_OUT' && (
@@ -428,16 +416,16 @@ export default function HomePage() {
 
                     <div className="p-4 space-y-2.5">
                       <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        {product.brand} • {product.category}
+                        {product.brand || 'General'} • {product.category || 'Fashion'}
                       </div>
                       <h3 className="font-extrabold text-black text-sm line-clamp-2 leading-snug">
                         {product.title}
                       </h3>
                       <div className="text-xs text-black font-black bg-gray-100 p-2.5 rounded-xl border border-gray-200">
-                        📏 สเปก: {product.size}
+                        📏 สเปก: {product.size || 'Free Size'}
                       </div>
                       <div className="text-xl font-black text-black tracking-tight pt-1">
-                        ฿{product.price.toLocaleString()}
+                        ฿{Number(product.price || 0).toLocaleString()}
                       </div>
                     </div>
                   </div>
@@ -463,7 +451,7 @@ export default function HomePage() {
                     >
                       <Heart
                         className={`w-4 h-4 ${
-                          wishlist.some((item) => item.id === product.id)
+                          (wishlist || []).some((item) => item?.id === product.id)
                             ? 'text-red-600 fill-red-600'
                             : 'text-gray-400'
                         }`}
@@ -515,57 +503,61 @@ export default function HomePage() {
           <div className="text-2xl font-black text-white italic tracking-tighter uppercase">
             KUISCOOL<span className="text-red-600">Z</span>
           </div>
-          <p className="text-gray-500 text-[11px]">© {new Date().getFullYear()} KUISCOOLZ. ALL RIGHTS RESERVED.</p>
+          <p className="text-gray-500 text-[11px]">© 2026 KUISCOOLZ. ALL RIGHTS RESERVED.</p>
         </div>
       </footer>
 
       {/* Modals */}
       <AuthModal 
-  isOpen={isAuthOpen} 
-  onClose={() => setIsAuthOpen(false)} 
-  onLoginSuccess={() => {}} 
-/>
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setIsAuthOpen(false);
+        }} 
+      />
+      
       <BuyModal
         isOpen={isBuyModalOpen}
         onClose={() => setIsBuyModalOpen(false)}
-        onSuccessPayment={(orderInfo) => {
+        onSuccessPayment={(orderInfo: any) => {
           setPaymentOrderData(orderInfo);
           setIsBuyModalOpen(false);
           setIsPaymentModalOpen(true);
         }}
         product={selectedBuyProduct}
       />
+      
       <OfferModal
         isOpen={isOfferModalOpen}
         onClose={() => setIsOfferModalOpen(false)}
         product={selectedOfferProduct}
       />
+      
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         orderData={paymentOrderData}
       />
+      
       <AuctionModal
         isOpen={isAuctionModalOpen}
         onClose={() => setIsAuctionModalOpen(false)}
         item={selectedAuctionItem}
       />
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onLoginSuccess={(user) => setCurrentUser(user)}
-      />
+      
       <ChatModal
         isOpen={isChatModalOpen}
         onClose={() => setIsChatModalOpen(false)}
         product={selectedChatProduct}
       />
+      
       <WishlistModal
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
-        wishlist={wishlist}
-        onRemoveItem={(id) => setWishlist(wishlist.filter((item) => item.id !== id))}
-        onBuyItem={(product) => {
+        wishlist={wishlist || []}
+        onRemoveItem={(id: string) => setWishlist((wishlist || []).filter((item) => item?.id !== id))}
+        onBuyItem={(product: any) => {
           setSelectedBuyProduct(product);
           setIsBuyModalOpen(true);
         }}

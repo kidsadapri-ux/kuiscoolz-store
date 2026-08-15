@@ -20,6 +20,7 @@ interface AuctionModalProps {
 }
 
 export default function AuctionModal({ isOpen, onClose, item }: AuctionModalProps) {
+  if (!isOpen) return null;
   const [currentBid, setCurrentBid] = useState(0);
   const [bidHistory, setBidHistory] = useState<any[]>([]);
   const [customBid, setCustomBid] = useState('');

@@ -15,6 +15,7 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ isOpen, onClose, orderData }: PaymentModalProps) {
+  if (!isOpen) return null;
   const [slipFile, setSlipFile] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -16,6 +16,7 @@ interface ChatModalProps {
 }
 
 export default function ChatModal({ isOpen, onClose, product }: ChatModalProps) {
+  if (!isOpen) return null;
   const [messages, setMessages] = useState<Array<{ id: string; sender: 'me' | 'seller'; text: string; time: string }>>([]);
   const [inputText, setInputText] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
