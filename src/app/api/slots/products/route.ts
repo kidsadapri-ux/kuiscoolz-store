@@ -10,7 +10,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 export async function GET() {
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json(
-      { error: 'Environment variables missing: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is not set.' },
+      { error: 'Environment variables missing: URL or ANON_KEY is not configured on Vercel.' },
       { status: 500 }
     );
   }
@@ -23,7 +23,7 @@ export async function GET() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json(data || []);
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
           size: body.size || 'Free Size',
           category: body.category || 'Shirt',
           condition_grade: body.conditionGrade || body.condition_grade || 'GRADE_A',
-          image: body.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80',
+          image: body.image || '',
           status: body.status || 'AVAILABLE',
           allow_offers: body.allowOffers || false,
         },
