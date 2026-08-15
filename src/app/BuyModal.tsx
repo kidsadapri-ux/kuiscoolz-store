@@ -32,16 +32,17 @@ export default function BuyModal({ isOpen, onClose, onSuccessPayment, product }:
     const demoOrderNumber = `ORD-${Date.now().toString().slice(-6)}`;
 
     try {
-      await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId: product.id,
-          buyerId: 'demo-buyer-id',
-          shippingAddress: address,
-          paymentMethod,
-        }),
-      });
+     await fetch('/api/orders', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    productId: product.id,
+    productTitle: product.title,
+    totalPrice: product.price,
+    shippingAddress: address,
+    paymentMethod,
+  }),
+});
     } catch (err) {
       // ละเว้น error จากการหา API ไม่เจอเพื่อทดสอบ UI
     } finally {

@@ -1,82 +1,72 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-// ดึงรายการสินค้าทั้งหมด
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// 1. ดึงข้อมูลสินค้าทั้งหมด
 export async function GET() {
   try {
-    const products = await (prisma as any).product.findMany({
-      include: { 
-        seller: true, 
-        offers: true 
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    return NextResponse.json(products);
-  } catch (error: any) {
-    console.error('Fetch error:', error);
-    return NextResponse.json(
-      { error: 'ไม่สามารถดึงข้อมูลสินค้าได้' },
-      { status: 500 }
-    );
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return NextResponse.json(data || []);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// เพิ่มสินค้าฝากขาย (หัก 1 Slot)
-export async function POST(request: Request) {
+// 2. รับข้อมูลจากหน้าแอดมินมาบันทึกลง Supabase
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { sellerId, title, price, brand, size, conditionGrade, saleType, image } = body;
+    const body = await req.json();
+    const { data, error } = await supabase
+      .from('products')
+      .insert([
+        {
+          title: body.title,
+          description: body.description || '',
+          price: Number(body.price),
+          brand: body.brand || 'General',
+          size: body.size || 'Free Size',
+          category: body.category || 'Shirt',
+          condition_grade: body.conditionGrade || body.condition_grade || 'GRADE_A',
+          image: body.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80',
+          status: body.status || 'AVAILABLE',
+          allow_offers: body.allowOffers || false,
+        }
+      ])
+      .select();
 
-    // เช็กว่ามี sellerId ส่งมาไหม
-    if (!sellerId) {
-      return NextResponse.json(
-        { error: 'กรุณาระบุข้อมูลผู้ขาย (sellerId)' },
-        { status: 400 }
-      );
-    }
+    if (error) throw error;
+    return NextResponse.json(data?.[0], { status: 201 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
 
-    // เช็ก Slot ผู้ขาย
-    const seller = await (prisma as any).user.findUnique({ where: { id: sellerId } });
-    if (!seller || (seller.listingSlots !== undefined && seller.listingSlots < 1)) {
-      return NextResponse.json(
-        { error: 'Slot ไม่เพียงพอ กรุณาซื้อ Slot เพิ่ม (10฿/Slot)' },
-        { status: 400 }
-      );
-    }
+// 3. แก้ไขสถานะสินค้า (เช่น เปลี่ยนเป็น SOLD OUT)
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, status } = body;
 
-    // หัก Slot และเพิ่มสินค้า
-    const result = await (prisma as any).$transaction(async (tx: any) => {
-      // หัก 1 Slot ถ้ามีฟิลด์ listingSlots
-      if (seller.listingSlots !== undefined) {
-        await tx.user.update({
-          where: { id: sellerId },
-          data: { listingSlots: { decrement: 1 } },
-        });
-      }
+    const { data, error } = await supabase
+      .from('products')
+      .update({ status })
+      .eq('id', id)
+      .select();
 
-      return await tx.product.create({
-        data: {
-          title,
-          description: 'สินค้าแฟชั่นมือสองสภาพดี',
-          price: parseFloat(price) || 0,
-          brand: brand || 'General',
-          size: size || 'Free Size',
-          image: image || '',
-          status: 'AVAILABLE',
-          sellerId,
-        },
-      });
-    });
-
-    return NextResponse.json({
-      message: 'ลงขายสินค้าสำเร็จ (หัก 1 Slot เรียบร้อย)',
-      product: result,
-    }, { status: 201 });
-  } catch (error: any) {
-    console.error('Create product error:', error);
-    return NextResponse.json(
-      { error: 'ไม่สามารถลงขายได้' },
-      { status: 500 }
-    );
+    if (error) throw error;
+    return NextResponse.json(data?.[0]);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -156,19 +156,19 @@ export default function PaymentModal({ isOpen, onClose, orderData }: PaymentModa
                 <div className="space-y-1 pt-1">
                   <div className="flex justify-between">
                     <span className="text-gray-500">ธนาคาร:</span>
-                    <span className="font-bold text-gray-900">กสิกรไทย (KBANK)</span>
+                    <span className="font-bold text-gray-900">กรุงไทย</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">ชื่อบัญชี:</span>
-                    <span className="font-bold text-gray-900">ร้านขายเสื้อผ้ามือสอง</span>
+                    <span className="font-bold text-gray-900">กฤษฎา ภูมิสายดอน **เท่านั้น**</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500">เลขที่บัญชี:</span>
                     <div className="flex items-center gap-1">
-                      <span className="font-mono font-bold text-black">123-4-56789-0</span>
+                      <span className="font-mono font-bold text-black">663-8-62703-1</span>
                       <button
                         type="button"
-                        onClick={() => handleCopyAccount('1234567890')}
+                        onClick={() => handleCopyAccount('6638627031')}
                         className="text-red-600 hover:text-red-700 font-bold ml-1"
                       >
                         {copied ? 'คัดลอกแล้ว!' : <Copy className="w-3.5 h-3.5 inline" />}
