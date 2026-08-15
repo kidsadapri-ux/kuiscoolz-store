@@ -18,10 +18,15 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 
-// เชื่อมต่อ Supabase Client โดยตรง
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ตัวช่วยสร้าง Supabase Client
+const getSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  if (!url || !key) {
+    console.error('Supabase URL หรือ Anon Key หายไป!');
+  }
+  return createClient(url, key);
+};
 
 interface Product {
   id: string;
@@ -55,10 +60,11 @@ export default function AdminPage() {
     description: '',
   });
 
-  // 1. ดึงข้อมูลสินค้าจาก Supabase โดยตรง
+  // 1. ดึงข้อมูลสินค้าจาก Supabase
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -66,10 +72,11 @@ export default function AdminPage() {
 
       if (error) {
         console.error('Supabase fetch error:', error);
+        alert(`❌ โหลดข้อมูลไม่สำเร็จ: ${error.message}`);
         return;
       }
       setProducts(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load products:', err);
     } finally {
       setLoading(false);
@@ -80,39 +87,41 @@ export default function AdminPage() {
     fetchProducts();
   }, []);
 
-  // 2. ฟังก์ชันเพิ่มสินค้าใหม่ลง Supabase โดยตรง
+  // 2. ฟังก์ชันเพิ่มสินค้าใหม่ลง Supabase พร้อมแจ้งเตือน Error ชัดเจน
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.price || !formData.image) {
-      return alert('กรุณากรอกชื่อสินค้า ราคา และ URL รูปภาพ');
+      return alert('กรุณากรอกชื่อสินค้า ราคา และ URL รูปภาพ ให้ครบถ้วน');
     }
 
     setSaving(true);
     try {
+      const supabase = getSupabase();
+      
+      const payload = {
+        title: formData.title.trim(),
+        brand: formData.brand.trim() || 'General',
+        price: Number(formData.price),
+        size: formData.size.trim(),
+        category: formData.category,
+        condition_grade: formData.conditionGrade,
+        image: formData.image.trim(),
+        description: formData.description.trim() || '',
+        status: 'AVAILABLE',
+      };
+
       const { data, error } = await supabase
         .from('products')
-        .insert([
-          {
-            title: formData.title,
-            brand: formData.brand || 'General',
-            price: Number(formData.price),
-            size: formData.size,
-            category: formData.category,
-            condition_grade: formData.conditionGrade,
-            image: formData.image,
-            description: formData.description,
-            status: 'AVAILABLE',
-          },
-        ])
+        .insert([payload])
         .select();
 
       if (error) {
-        alert(`บันทึกไม่สำเร็จ: ${error.message}`);
-        console.error(error);
+        console.error('Supabase insert error:', error);
+        alert(`❌ Supabase ปฏิเสธข้อมูล:\nข้อความ: ${error.message}\nรหัส: ${error.code}`);
         return;
       }
 
-      alert('✅ เพิ่มสินค้าลง Supabase เรียบร้อยแล้ว!');
+      alert('✅ เพิ่มสินค้าลง Supabase สำเร็จแล้ว!');
       setFormData({
         title: '',
         brand: '',
@@ -126,7 +135,8 @@ export default function AdminPage() {
       setIsModalOpen(false);
       fetchProducts();
     } catch (error: any) {
-      alert(`เกิดข้อผิดพลาด: ${error.message || 'ไม่สามารถบันทึกได้'}`);
+      console.error('Catch error:', error);
+      alert(`❌ ข้อผิดพลาดระบบ: ${error.message || 'ไม่สามารถส่งคำขอได้'}`);
     } finally {
       setSaving(false);
     }
@@ -136,6 +146,7 @@ export default function AdminPage() {
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'AVAILABLE' ? 'SOLD_OUT' : 'AVAILABLE';
     try {
+      const supabase = getSupabase();
       const { error } = await supabase
         .from('products')
         .update({ status: newStatus })
