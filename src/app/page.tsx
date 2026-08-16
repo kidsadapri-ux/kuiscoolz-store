@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '../supabase';
+import { supabase } from '@/supabase';
 import { 
   Package, 
   Tag, 
