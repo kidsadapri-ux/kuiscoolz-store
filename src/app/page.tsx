@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../supabase';
 import { 
   Package, 
   Tag, 
@@ -16,16 +16,9 @@ import {
   Camera,
   ShieldCheck,
   ShoppingBag,
-  MessageCircle,
   Heart,
-  CheckCircle2
+  MessageCircle
 } from 'lucide-react';
-
-// เชื่อมต่อ Supabase โดยตรงด้วย Key จริง
-const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iaHZ1eHZ0c2ZpaGRlbHFqem1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MTQ5MDMsImV4cCI6MjEwMjE5MDkwM30.kkVSeL3fK-V5dx0CQRdBRf1UZPd198cDNUrXEjik7qM';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -37,7 +30,6 @@ export default function HomePage() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
-  // ดึงข้อมูลสินค้าจาก Supabase
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -52,7 +44,7 @@ export default function HomePage() {
         setProducts(data);
       }
     } catch (err) {
-      console.error('Error fetching data:', err);
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -72,7 +64,6 @@ export default function HomePage() {
 
   const filteredProducts = (products || []).filter((product: any) => {
     if (!product) return false;
-    
     const titleMatch = (product.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     const brandMatch = (product.brand || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSearch = !searchQuery || titleMatch || brandMatch;
@@ -351,7 +342,7 @@ export default function HomePage() {
 
             <div className="pt-2">
               <a
-                href={`https://ig.me/m/kuisccolz`}
+                href="https://ig.me/m/kuisccolz"
                 target="_blank"
                 rel="noreferrer"
                 className="w-full bg-black hover:bg-zinc-800 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg"
