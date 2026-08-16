@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { 
   LayoutDashboard, 
   Package, 
@@ -11,17 +11,11 @@ import {
   Plus, 
   Store, 
   ShieldCheck, 
-  X, 
-  Trash2, 
-  CheckCircle,
-  RefreshCw,
-  Image as ImageIcon
+  X
 } from 'lucide-react';
 
-// ตัวช่วยสร้าง Supabase Client
 const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iaHZ1eHZ0c2ZpaGRlbHFqem1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MTQ5MDMsImV4cCI6MjEwMjE5MDkwM30.kkVSeL3fK-V5dx0CQRdBRf1UZPd198cDNUrXEjik7qM';
-
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Product {
@@ -44,7 +38,6 @@ export default function AdminPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // ฟอร์มข้อมูลสินค้าใหม่
   const [formData, setFormData] = useState({
     title: '',
     brand: '',
@@ -56,11 +49,9 @@ export default function AdminPage() {
     description: '',
   });
 
-  // 1. ดึงข้อมูลสินค้าจาก Supabase
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const supabase = getSupabase();
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -68,11 +59,10 @@ export default function AdminPage() {
 
       if (error) {
         console.error('Supabase fetch error:', error);
-        alert(`❌ โหลดข้อมูลไม่สำเร็จ: ${error.message}`);
         return;
       }
       setProducts(data || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load products:', err);
     } finally {
       setLoading(false);
@@ -83,17 +73,14 @@ export default function AdminPage() {
     fetchProducts();
   }, []);
 
-  // 2. ฟังก์ชันเพิ่มสินค้าใหม่ลง Supabase พร้อมแจ้งเตือน Error ชัดเจน
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.price || !formData.image) {
-      return alert('กรุณากรอกชื่อสินค้า ราคา และ URL รูปภาพ ให้ครบถ้วน');
+      return alert('กรุณากรอกชื่อสินค้า ราคา และ URL รูปภาพ');
     }
 
     setSaving(true);
     try {
-      const supabase = getSupabase();
-      
       const payload = {
         title: formData.title.trim(),
         brand: formData.brand.trim() || 'General',
@@ -106,18 +93,16 @@ export default function AdminPage() {
         status: 'AVAILABLE',
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('products')
-        .insert([payload])
-        .select();
+        .insert([payload]);
 
       if (error) {
-        console.error('Supabase insert error:', error);
-        alert(`❌ Supabase ปฏิเสธข้อมูล:\nข้อความ: ${error.message}\nรหัส: ${error.code}`);
+        alert(`บันทึกไม่สำเร็จ: ${error.message}`);
         return;
       }
 
-      alert('✅ เพิ่มสินค้าลง Supabase สำเร็จแล้ว!');
+      alert('✅ เพิ่มสินค้าลง Supabase เรียบร้อยแล้ว!');
       setFormData({
         title: '',
         brand: '',
@@ -131,18 +116,15 @@ export default function AdminPage() {
       setIsModalOpen(false);
       fetchProducts();
     } catch (error: any) {
-      console.error('Catch error:', error);
-      alert(`❌ ข้อผิดพลาดระบบ: ${error.message || 'ไม่สามารถส่งคำขอได้'}`);
+      alert(`เกิดข้อผิดพลาด: ${error.message || 'ไม่สามารถบันทึกได้'}`);
     } finally {
       setSaving(false);
     }
   };
 
-  // 3. ฟังก์ชันสลับสถานะสินค้า (AVAILABLE <-> SOLD_OUT)
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'AVAILABLE' ? 'SOLD_OUT' : 'AVAILABLE';
     try {
-      const supabase = getSupabase();
       const { error } = await supabase
         .from('products')
         .update({ status: newStatus })
@@ -252,7 +234,6 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* 4 STAT CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-1">
                 <span className="text-[11px] font-bold text-gray-400">สินค้าพร้อมขายทั้งหมด</span>
@@ -271,48 +252,10 @@ export default function AdminPage() {
                 <div className="text-2xl font-black text-purple-600">0 รายการ</div>
               </div>
             </div>
-
-            {/* QUICK ACTIONS */}
-            <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-4">
-              <h3 className="text-xs font-black uppercase text-gray-500 tracking-wider">ทางลัดจัดการระบบ (QUICK ACTIONS)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="border border-gray-200 hover:border-black rounded-xl p-4 text-left transition-all flex items-start gap-3 bg-gray-50"
-                >
-                  <Plus className="w-5 h-5 text-red-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-xs">ลงสินค้าของร้าน</h4>
-                    <p className="text-[10px] text-gray-400">เพิ่มเสื้อผ้า/รองเท้าเข้าร้าน</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('products')}
-                  className="border border-gray-200 hover:border-black rounded-xl p-4 text-left transition-all flex items-start gap-3 bg-gray-50"
-                >
-                  <Package className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-xs">จัดการตารางสินค้า</h4>
-                    <p className="text-[10px] text-gray-400">เปลี่ยนสถานะเป็น SOLD OUT</p>
-                  </div>
-                </button>
-
-                <button
-                  className="border border-gray-200 hover:border-black rounded-xl p-4 text-left transition-all flex items-start gap-3 bg-gray-50"
-                >
-                  <CreditCard className="w-5 h-5 text-emerald-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-xs">อัปเดตสลิปเครดิต</h4>
-                    <p className="text-[10px] text-gray-400">แนบสลิปโอน + เลขพัสดุ</p>
-                  </div>
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* PRODUCTS TABLE TAB */}
+        {/* PRODUCTS TAB */}
         {activeTab === 'products' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -336,7 +279,7 @@ export default function AdminPage() {
                     <th className="p-4">ชื่อสินค้า / แบรนด์</th>
                     <th className="p-4">หมวดหมู่ / ไซส์</th>
                     <th className="p-4">ราคา</th>
-                    <th className="p-4">สถานะ (คลิกเพื่อสลับ)</th>
+                    <th className="p-4">สถานะ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -446,7 +389,7 @@ export default function AdminPage() {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full border rounded-xl p-2.5 focus:border-black outline-none"
                   >
-                    <option value="T-Shirt">เสื้อยืด (T-Shirt)</option>
+                    <option value="Shirt">เสื้อยืด (T-Shirt)</option>
                     <option value="Jacket">แจ็คเก็ต (Jacket)</option>
                     <option value="Pants">กางเกง (Pants)</option>
                     <option value="Shoes">รองเท้า (Shoes)</option>

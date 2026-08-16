@@ -4,21 +4,24 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { 
-  Package, 
   Tag, 
   Sparkles, 
-  SlidersHorizontal,
-  ArrowRight,
-  X,
-  SearchX,
-  Camera,
-  ShieldCheck,
-  ShoppingBag,
-  Heart,
-  MessageCircle
+  SlidersHorizontal, 
+  ArrowRight, 
+  X, 
+  SearchX, 
+  Camera, 
+  ShieldCheck, 
+  ShoppingBag, 
+  Heart, 
+  MessageCircle 
 } from 'lucide-react';
+
+const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iaHZ1eHZ0c2ZpaGRlbHFqem1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MTQ5MDMsImV4cCI6MjEwMjE5MDkwM30.kkVSeL3fK-V5dx0CQRdBRf1UZPd198cDNUrXEjik7qM';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -67,12 +70,9 @@ export default function HomePage() {
     const titleMatch = (product.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     const brandMatch = (product.brand || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSearch = !searchQuery || titleMatch || brandMatch;
-
     const matchesCategory = selectedCategory === 'ALL' || product.category?.toLowerCase() === selectedCategory.toLowerCase();
-    
     const grade = product.condition_grade || product.conditionGrade || 'GRADE_A';
     const matchesGrade = selectedGrade === 'ALL' || grade === selectedGrade;
-
     const matchesPrice = maxPrice === '' || Number(product.price || 0) <= Number(maxPrice);
 
     return matchesSearch && matchesCategory && matchesGrade && matchesPrice;
