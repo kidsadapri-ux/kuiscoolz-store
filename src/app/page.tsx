@@ -49,7 +49,7 @@ export default function HomePage() {
   const [maxPrice, setMaxPrice] = useState<number | ''>('');
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ name: string; ig_username: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ name: string; ig_username: string; role?: string; address?: string } | null>(null);
   const [selectedBuyProduct, setSelectedBuyProduct] = useState<any>(null);
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
   const [selectedOfferProduct, setSelectedOfferProduct] = useState<any>(null);
@@ -79,8 +79,28 @@ export default function HomePage() {
   };
 
   useEffect(() => {
+    // 1. ตรวจสอบสถานะการล็อกอินที่เคยเก็บไว้ในเครื่อง
+    const savedUser = localStorage.getItem('kuiscoolz_user');
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
     fetchData();
   }, []);
+
+  const handleLoginSuccess = (user: any) => {
+    setCurrentUser(user);
+    localStorage.setItem('kuiscoolz_user', JSON.stringify(user));
+    setIsAuthOpen(false);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('kuiscoolz_user');
+  };
 
   const toggleWishlist = (product: any) => {
     if (!product?.id) return;
@@ -109,30 +129,30 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-[#111111] font-sans antialiased selection:bg-[#111111] selection:text-white">
       
-      {/* 1. TOP RIBBON (Balanced Typography) */}
+      {/* 1. TOP RIBBON */}
       <div className="bg-black text-white text-[11px] font-medium py-2.5 px-4 sm:px-12 border-b border-zinc-900">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-zinc-300 font-semibold">
-            <Camera className="w-3.5 h-3.5 text-[#d30005]" /> IG: @kuisccolz
+            <Camera className="w-3.5 h-3.5 text-[#ff0000]" /> IG: @kuisccolz
           </div>
           <div className="text-center font-black tracking-[0.2em] text-white text-[11px] uppercase">
-  KUISCOOL<span className="text-[#ff0000]">Z</span>
-  <span className="mx-2 text-zinc-600">|</span>
-  <span className="font-normal text-zinc-300">ร้านที่ให้มากกว่าแฟชั่น</span>
-</div>
+            KUISCOOL<span className="text-[#ff0000]">Z</span>
+            <span className="mx-2 text-zinc-600">|</span>
+            <span className="font-normal text-zinc-300">ร้านที่ให้มากกว่าแฟชั่น</span>
+          </div>
           <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> AUTHENTIC 100%
           </div>
         </div>
       </div>
 
-      {/* 2. MAIN HEADER (Balanced Brand Typography) */}
+      {/* 2. MAIN HEADER */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#e5e5e5] h-16">
         <div className="max-w-[1440px] mx-auto px-6 sm:px-12 h-full flex items-center justify-between gap-6">
           
-          <Link href="/" className="flex items-center group">
-            <span className="text-2xl sm:text-[28px] font-black tracking-tight text-[#111111] uppercase leading-none transition-transform active:scale-95">
-              KUISCOOL<span className="text-[#d30005]">Z</span>
+          <Link href="/" className="inline-flex items-center group">
+            <span className="text-2xl sm:text-[28px] font-black tracking-tight text-[#111111] uppercase leading-none">
+              KUISCOOL<span className="text-[#ff0000] inline-block font-black">Z</span>
             </span>
           </Link>
 
@@ -167,19 +187,19 @@ export default function HomePage() {
               href="/my-orders" 
               className="flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#e5e5e5] text-[#111111] px-4 py-2 rounded-full transition-all"
             >
-              <Package className="w-3.5 h-3.5 text-[#d30005]" /> คำสั่งซื้อ
+              <Package className="w-3.5 h-3.5 text-[#ff0000]" /> คำสั่งซื้อ
             </Link>
 
             {currentUser ? (
               <div className="flex items-center gap-2 bg-[#111111] text-white pl-3 py-1 pr-1.5 rounded-full font-bold">
-                <span className="w-6 h-6 bg-[#d30005] text-white rounded-full flex items-center justify-center text-[10px]">
+                <span className="w-6 h-6 bg-[#ff0000] text-white rounded-full flex items-center justify-center text-[10px]">
                   {currentUser.ig_username?.charAt(0)?.toUpperCase()}
                 </span>
-                <span className="text-xs line-clamp-1">{currentUser.name}</span>
+                <span className="text-xs line-clamp-1">{currentUser.name || currentUser.ig_username}</span>
                 <button
-                  onClick={() => setCurrentUser(null)}
+                  onClick={handleLogout}
                   title="ออกจากระบบ"
-                  className="text-gray-400 hover:text-[#d30005] p-1 transition-colors"
+                  className="text-gray-400 hover:text-[#ff0000] p-1 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
@@ -187,7 +207,7 @@ export default function HomePage() {
             ) : (
               <button
                 onClick={() => setIsAuthOpen(true)}
-                className="bg-[#d30005] hover:bg-[#780700] text-white px-4 py-2 rounded-full transition-all flex items-center gap-1.5 active:scale-95 shadow-sm"
+                className="bg-[#ff0000] hover:bg-[#d00000] text-white px-4 py-2 rounded-full transition-all flex items-center gap-1.5 active:scale-95 shadow-sm font-bold"
               >
                 <User className="w-3.5 h-3.5" /> เข้าสู่ระบบ
               </button>
@@ -197,14 +217,14 @@ export default function HomePage() {
       </header>
 
       {/* 3. NIKE FULL-BLEED CINEMATIC HERO BANNER */}
-      <section className="relative w-full bg-[#111111] min-h-[480px] sm:min-h-[580px] lg:min-h-[640px] flex items-center justify-center overflow-hidden border-b-4 border-[#d30005]">
+      <section className="relative w-full bg-[#111111] min-h-[480px] sm:min-h-[580px] lg:min-h-[640px] flex items-center justify-center overflow-hidden border-b-4 border-[#ff0000]">
         
         {/* Background Stage */}
         <div className="absolute inset-0 z-0">
           <img
             src={
               banner.image_url ||
-              'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=1600&q=85'
+              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVrrdTkWkD11eIalzupIxv-J7TPWgc8L_sWL45nJuZ3Q&s'
             }
             alt="Hero Background"
             className="w-full h-full object-cover object-center brightness-[0.72]"
@@ -217,14 +237,14 @@ export default function HomePage() {
           
           {banner.tag_text && (
             <div className="inline-flex items-center gap-1.5 bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#d30005] animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ff0000] animate-pulse" />
               {banner.tag_text}
             </div>
           )}
 
           <h1 className="text-3xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight text-white leading-none drop-shadow-lg">
             {banner.title_white}{' '}
-            <span className="text-[#d30005] inline-block">{banner.title_red}</span>
+            <span className="text-[#ff0000] inline-block">{banner.title_red}</span>
           </h1>
 
           {banner.subtitle && (
@@ -233,7 +253,6 @@ export default function HomePage() {
             </p>
           )}
 
-          {/* Action Dual Pills */}
           <div className="pt-2 flex items-center justify-center gap-3">
             <a
               href="#catalog"
@@ -307,7 +326,7 @@ export default function HomePage() {
                   setSelectedGrade('ALL');
                   setMaxPrice('');
                 }}
-                className="text-xs text-[#d30005] font-bold flex items-center gap-1 ml-2 uppercase"
+                className="text-xs text-[#ff0000] font-bold flex items-center gap-1 ml-2 uppercase"
               >
                 <X className="w-3.5 h-3.5" /> ล้าง
               </button>
@@ -410,7 +429,7 @@ export default function HomePage() {
                         title="บันทึกสินค้าที่ถูกใจ"
                       >
                         <Heart
-                          className={`w-4 h-4 ${isLiked ? 'text-[#d30005] fill-[#d30005]' : 'text-[#707072]'}`}
+                          className={`w-4 h-4 ${isLiked ? 'text-[#ff0000] fill-[#ff0000]' : 'text-[#707072]'}`}
                         />
                       </button>
 
@@ -458,7 +477,7 @@ export default function HomePage() {
       <footer className="bg-black text-gray-400 py-10 text-xs text-center border-t border-zinc-900 font-medium">
         <div className="max-w-7xl mx-auto px-4 space-y-3">
           <div className="text-2xl sm:text-3xl font-black tracking-tight text-white uppercase">
-            KUISCOOL<span className="text-[#d30005]">Z</span>
+            KUISCOOL<span className="text-[#ff0000] inline-block font-black">Z</span>
           </div>
           <p className="text-zinc-500 text-[11px] tracking-widest uppercase font-semibold">
             © 2026 KUISCOOLZ. ALL RIGHTS RESERVED.
@@ -470,15 +489,14 @@ export default function HomePage() {
       <AuthModal 
         isOpen={isAuthOpen} 
         onClose={() => setIsAuthOpen(false)} 
-        onLoginSuccess={(user: any) => {
-          setCurrentUser(user);
-          setIsAuthOpen(false);
-        }} 
+        onLoginSuccess={handleLoginSuccess} 
       />
       
       <BuyModal
         isOpen={isBuyModalOpen}
         onClose={() => setIsBuyModalOpen(false)}
+        currentUser={currentUser}
+        onRequireAuth={() => setIsAuthOpen(true)}
         onSuccessPayment={(orderInfo: any) => {
           setPaymentOrderData(orderInfo);
           setIsBuyModalOpen(false);
