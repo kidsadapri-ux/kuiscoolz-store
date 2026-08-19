@@ -1,41 +1,59 @@
 'use client';
 
-import { useState } from 'react';
-import { Star, ShieldCheck } from 'lucide-react';
+import React from 'react';
+import { Camera, ExternalLink, ShieldCheck, Sparkles } from 'lucide-react';
 
-export default function ProductReviews({ reviews = [] }: { reviews?: any[] }) {
-  const safeReviews = Array.isArray(reviews) ? reviews : [];
+export default function ProductReviews() {
+  const creditIgAccount = 'kuisccolz';
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between border-b pb-2">
-        <h3 className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" /> รีวิวและสลิปการจัดส่งจริง
-        </h3>
-        <span className="text-[11px] font-bold text-gray-500">
-          ความพึงพอใจ 4.9/5 ({safeReviews.length} รีวิว)
-        </span>
+    <div className="py-2 px-1 space-y-6">
+      
+      {/* ส่วนบน: หัวข้อซ้าย + ปุ่มแคปซูลเข้า IG ขวา */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e5e5e5] pb-5">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#007d48]">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#007d48]" /> Verified Customer Reviews
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-[#111111]">
+            เครดิต & รีวิวการจัดส่งจริง
+          </h2>
+        </div>
+
+        <a
+          href={`https://instagram.com/${creditIgAccount}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center justify-center gap-2 bg-[#111111] hover:bg-black text-white text-xs sm:text-sm font-bold px-6 py-3 rounded-full transition-all active:scale-95 shadow-sm hover:shadow-md"
+        >
+          <Camera className="w-4 h-4 text-[#d30005]" />
+          <span>ดูเครดิตบน Instagram</span>
+          <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+        </a>
       </div>
 
-      {safeReviews.length === 0 ? (
-        <div className="text-center py-6 text-xs text-gray-400 font-bold">
-          ยังไม่มีรีวิวสำหรับสินค้านี้
+      {/* ส่วนกลาง: กล่องข้อความและชื่อ IG ดีไซน์สไตล์มินิมอล */}
+      <div className="bg-[#f5f5f5] rounded-2xl p-6 sm:p-8 text-center space-y-3 border border-[#e5e5e5]">
+        <p className="text-xs sm:text-sm text-[#707072] font-medium max-w-xl mx-auto leading-relaxed">
+          ทางร้านรวบรวมสลิปโอนเงิน ประวัติการแพ็กของ ส่งพัสดุ Flash / EMS <br className="hidden sm:inline" />
+          และรีวิวจากลูกค้าจริงทุกคำสั่งซื้อไว้ในไฮไลต์สตอรี่ไอจี
+        </p>
+
+        <div className="pt-2">
+          <a
+            href={`https://instagram.com/${creditIgAccount}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 bg-white text-[#111111] px-5 py-2.5 rounded-full border border-[#cacacb] hover:border-[#111111] transition-all shadow-xs group"
+          >
+            <span className="text-xs font-bold text-[#707072]">ชื่อ IG ทางการ:</span>
+            <span className="text-sm font-black text-[#111111] group-hover:text-[#d30005] transition-colors">
+              @{creditIgAccount}
+            </span>
+          </a>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {safeReviews.map((rev: any, index: number) => (
-            <div key={rev?.id || index} className="p-3 bg-gray-50 rounded-2xl border border-gray-200 space-y-2">
-              <div className="flex items-center gap-1 text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3 h-3 fill-amber-400" />
-                ))}
-              </div>
-              <p className="text-xs font-bold text-gray-800">{rev?.comment || 'สินค้าสวย ตรงปก ส่งไวมากครับ'}</p>
-              <div className="text-[10px] text-gray-400 font-extrabold">{rev?.user || 'ลูกค้าที่สั่งซื้อ'}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      </div>
+
     </div>
   );
 }
