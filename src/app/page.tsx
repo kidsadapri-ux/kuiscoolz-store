@@ -53,7 +53,7 @@ export default function HomePage() {
   const [banner, setBanner] = useState({
     title_white: 'KUISCOOLZ',
     subtitle: 'รับประกันแท้ทุกชิ้น ',
-    image_url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRnRdWdA5uuxMJ_JWBZy0KIELUG8FO5raDKDQTxHepnLg&s=10'
+    image_url: '/images.jpg',
   });
   const [loading, setLoading] = useState(true);
 
