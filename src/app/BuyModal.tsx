@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, ShoppingBag, MapPin, CreditCard, User, LogIn } from 'lucide-react';
+import { X, ShoppingBag, MapPin, CreditCard, User, LogIn, ChevronRight } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
@@ -46,31 +46,33 @@ export default function BuyModal({
   // ถ้ายังไม่ล็อกอิน แสดงปุ่มแจ้งเตือนให้เข้าสู่ระบบก่อน
   if (!currentUser) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-        <div className="bg-white rounded-3xl w-full max-w-sm p-6 sm:p-8 relative shadow-2xl space-y-4 text-center">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+        <div className="bg-[#ffffff] text-[#111111] rounded-3xl w-full max-w-sm p-6 sm:p-8 relative shadow-2xl space-y-5 text-center border border-[#e5e5e5]">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-black p-1 rounded-full"
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-[#f5f5f5] text-[#707072] hover:text-[#111111] transition-all active:scale-90"
           >
             <X className="w-5 h-5" />
           </button>
 
-          <div className="w-12 h-12 bg-red-50 text-[#d30005] rounded-full flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 bg-[#d30005]/10 text-[#d30005] rounded-full flex items-center justify-center mx-auto">
             <User className="w-6 h-6" />
           </div>
 
           <div className="space-y-1">
             <h3 className="text-lg font-black text-[#111111] uppercase tracking-tight">กรุณาเข้าสู่ระบบ</h3>
-            <p className="text-xs text-gray-500">เข้าสู่ระบบด้วยบัญชี IG เพื่อสั่งซื้อและติดตามสถานะพัสดุ</p>
+            <p className="text-xs text-[#707072] font-medium leading-relaxed">
+              เข้าสู่ระบบด้วยบัญชี IG เพื่อสั่งซื้อและติดตามสถานะพัสดุ
+            </p>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-1">
             <button
               onClick={() => {
                 onClose();
                 onRequireAuth();
               }}
-              className="w-full bg-[#d30005] hover:bg-[#780700] text-white font-bold py-3 rounded-full text-xs flex items-center justify-center gap-2 uppercase tracking-wider transition-all shadow-md"
+              className="w-full bg-[#111111] hover:bg-black text-[#ffffff] font-bold py-3.5 rounded-full text-xs flex items-center justify-center gap-2 uppercase tracking-wider transition-all active:scale-95 shadow-md"
             >
               <LogIn className="w-4 h-4" /> เข้าสู่ระบบ / สมัครสมาชิก
             </button>
@@ -87,7 +89,7 @@ export default function BuyModal({
     setLoading(true);
 
     try {
-      // บันทึกคำสั่งซื้อพร้อมผูก user_ig
+      // บันทึกคำสั่งซื้อพร้อมผูก user_ig (Logic เดิม)
       const { data: newOrder, error } = await supabase
         .from('orders')
         .insert([
@@ -130,96 +132,104 @@ export default function BuyModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-3xl w-full max-w-lg p-6 sm:p-8 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+      <div className="bg-[#ffffff] text-[#111111] rounded-3xl w-full max-w-lg p-5 sm:p-7 relative shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto border border-[#e5e5e5]">
         
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-black p-1 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        {/* Header Modal */}
+        <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-4">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-[#d30005]" />
-            <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">สรุปรายการสั่งซื้อ</h2>
+            <ShoppingBag className="w-5 h-5 text-[#111111]" />
+            <h2 className="text-lg font-black text-[#111111] uppercase tracking-tight">สรุปรายการสั่งซื้อ</h2>
           </div>
-          <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-            บัญชี: @{currentUser.ig_username}
-          </span>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-[#707072] bg-[#f5f5f5] px-3 py-1 rounded-full border border-[#e5e5e5]">
+              บัญชี: <span className="text-[#111111]">@{currentUser.ig_username}</span>
+            </span>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-[#f5f5f5] text-[#707072] hover:text-[#111111] transition-all active:scale-90"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* รายละเอียดสินค้า */}
-        <div className="flex gap-4 bg-[#f5f5f5] p-3.5 rounded-2xl border border-[#e5e5e5]">
+        {/* รายละเอียดสินค้า (Product Stage) */}
+        <div className="flex gap-4 bg-[#f5f5f5] p-3.5 sm:p-4 rounded-2xl border border-[#e5e5e5] items-center">
           <img
             src={product.image}
             alt={product.title}
-            className="w-16 h-16 object-cover rounded-xl border border-gray-200"
+            className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-[#cacacb] bg-[#ffffff] shrink-0"
           />
-          <div className="flex-1 space-y-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{product.brand || 'VINTAGE'}</span>
-            <h3 className="text-xs font-bold text-gray-900 line-clamp-1">{product.title}</h3>
-            <div className="text-base font-black text-[#d30005]">฿{Number(product.price).toLocaleString()}</div>
+          <div className="flex-1 space-y-0.5 min-w-0">
+            <span className="text-[10px] font-bold text-[#707072] uppercase tracking-wider block">
+              {product.brand || 'VINTAGE'}
+            </span>
+            <h3 className="text-xs sm:text-sm font-bold text-[#111111] line-clamp-1">{product.title}</h3>
+            <div className="text-base sm:text-lg font-black text-[#111111] tracking-tight pt-0.5">
+              ฿{Number(product.price).toLocaleString()}
+            </div>
           </div>
         </div>
 
+        {/* ฟอร์มข้อมูลสั่งซื้อ */}
         <form onSubmit={handleConfirmOrder} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-[#d30005]" /> ที่อยู่จัดส่ง และเบอร์โทรติดต่อ *
+          
+          {/* ข้อมูลที่อยู่ */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#111111] flex items-center gap-1.5 uppercase tracking-wide">
+              <MapPin className="w-3.5 h-3.5 text-[#d30005]" /> 
+              <span>ที่อยู่จัดส่ง และเบอร์โทรติดต่อ *</span>
             </label>
             <textarea
               required
               rows={3}
-              placeholder="ชื่อ-นามสกุล, เบอร์โทรศัพท์, บ้านเลขที่, ตำบล, อำเภอ, จังหวัด, รหัสไปรษณีย์..."
+              placeholder="ระบุชื่อ-นามสกุล, เบอร์โทรศัพท์, บ้านเลขที่, ตำบล, อำเภอ, จังหวัด, รหัสไปรษณีย์..."
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full border border-gray-200 rounded-2xl p-3 text-xs bg-[#fbfbfb] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full border border-transparent focus:border-[#111111] rounded-2xl p-3.5 text-xs font-medium bg-[#f5f5f5] focus:bg-[#ffffff] outline-none transition-all resize-none"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-              <CreditCard className="w-3.5 h-3.5 text-[#d30005]" /> วิธีการชำระเงิน
+          {/* วิธีการชำระเงิน (Pill Toggle) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#111111] flex items-center gap-1.5 uppercase tracking-wide">
+              <CreditCard className="w-3.5 h-3.5 text-[#111111]" /> 
+              <span>วิธีการชำระเงิน</span>
             </label>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => setPaymentMethod('PROMPTPAY')}
-                className={`p-3 rounded-xl border font-bold text-center transition-all ${
+                className={`py-3 px-4 rounded-full font-bold text-center transition-all flex items-center justify-center active:scale-95 ${
                   paymentMethod === 'PROMPTPAY'
-                    ? 'border-black bg-black text-white shadow-sm'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-[#111111] text-[#ffffff] shadow-sm'
+                    : 'bg-[#ffffff] text-[#111111] border border-[#cacacb] hover:border-[#111111]'
                 }`}
               >
-                Scan QR PromptPay
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('BANK_TRANSFER')}
-                className={`p-3 rounded-xl border font-bold text-center transition-all ${
-                  paymentMethod === 'BANK_TRANSFER'
-                    ? 'border-black bg-black text-white shadow-sm'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                โอนเงินผ่านบัญชีธนาคาร
+              
+              
+                โอนผ่านบัญชีธนาคาร
               </button>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+          {/* สรุปยอดและปุ่มยืนยัน */}
+          <div className="pt-4 border-t border-[#e5e5e5] flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-gray-400 block font-medium">ยอดชำระสุทธิ</span>
-              <span className="text-xl font-black text-[#d30005]">฿{Number(product.price).toLocaleString()}</span>
+              <span className="text-[10px] text-[#707072] block font-bold uppercase tracking-wider">ยอดชำระสุทธิ</span>
+              <span className="text-xl sm:text-2xl font-black text-[#111111] tracking-tight">
+                ฿{Number(product.price).toLocaleString()}
+              </span>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="bg-[#d30005] hover:bg-[#780700] disabled:bg-gray-400 text-white font-bold px-6 py-3 rounded-full text-xs transition-all uppercase tracking-wider active:scale-95 shadow-md"
+              className="bg-[#111111] hover:bg-black disabled:bg-[#cacacb] text-[#ffffff] font-bold px-7 py-3.5 rounded-full text-xs sm:text-sm transition-all uppercase tracking-wider active:scale-95 shadow-md flex items-center gap-1.5"
             >
-              {loading ? 'กำลังทำรายการ...' : 'ไปหน้าชำระเงิน'}
+              <span>{loading ? 'กำลังทำรายการ...' : 'ไปหน้าชำระเงิน'}</span>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </form>

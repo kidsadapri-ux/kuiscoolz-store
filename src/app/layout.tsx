@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'KUISCOOLZ — ร้านที่ให้มากกว่าแฟชั่น',
-  description: 'ศูนย์รวมแฟชั่นมือสอง เช็กสัดส่วน & สภาพจริง',
+  description: 'รับประกันของแท้ทุกชิ้น',
 };
 
 export default function RootLayout({

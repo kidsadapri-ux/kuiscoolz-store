@@ -5,35 +5,71 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
-import { Package, ArrowLeft, Truck, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { 
+  Package, 
+  ArrowLeft, 
+  Search, 
+  Truck, 
+  Clock, 
+  ExternalLink, 
+  Copy, 
+  Check 
+} from 'lucide-react';
 
 const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iaHZ1eHZ0c2ZpaGRlbHFqem1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MTQ5MDMsImV4cCI6MjEwMjE5MDkwM30.kkVSeL3fK-V5dx0CQRdBRf1UZPd198cDNUrXEjik7qM';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function MyOrdersPage() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchTel, setSearchTel] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // ฟังก์ชันสร้าง Direct Link ไปยังระบบเช็กพัสดุอัตโนมัติ
+  const getTrackingUrl = (trackingNumber: string, courierName?: string) => {
+    const cleanTrack = trackingNumber.trim();
+    const courier = (courierName || '').toLowerCase();
+
+    if (courier.includes('flash') || cleanTrack.startsWith('TH')) {
+      return `https://www.flashexpress.co.th/tracking/?se=${cleanTrack}`;
+    }
+    if (courier.includes('ems') || courier.includes('thai post') || /^[A-Z]{2}\d{9}TH$/i.test(cleanTrack)) {
+      return `https://track.thailandpost.co.th/?trackNumber=${cleanTrack}`;
+    }
+    return `https://www.flashexpress.co.th/tracking/?se=${cleanTrack}`;
+  };
+
+  const handleCopy = (trackNo: string, orderId: string) => {
+    navigator.clipboard.writeText(trackNo);
+    setCopiedId(orderId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('kuiscoolz_user');
     if (savedUser) {
-      const user = JSON.parse(savedUser);
-      setCurrentUser(user);
-      fetchUserOrders(user.ig_username);
-    } else {
-      setLoading(false);
+      try {
+        const user = JSON.parse(savedUser);
+        if (user.ig_username) {
+          fetchUserOrders(user.ig_username);
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
   }, []);
 
-  const fetchUserOrders = async (igUsername: string) => {
+  const fetchUserOrders = async (ig: string) => {
+    setLoading(true);
+    setSearched(true);
     try {
-      setLoading(true);
+      const cleanIg = ig.trim().replace(/^@/, '');
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('user_ig', igUsername)
+        .ilike('user_ig', cleanIg)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -45,98 +81,178 @@ export default function MyOrdersPage() {
     }
   };
 
+  const handleSearchByTel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTel.trim()) return;
+
+    setLoading(true);
+    setSearched(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_tel', searchTel.trim())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setOrders(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const maskPhone = (phone?: string) => {
+    if (!phone) return '-';
+    const clean = phone.replace(/[^0-9]/g, '');
+    if (clean.length < 9) return phone;
+    return `${clean.slice(0, 3)}-xxx-${clean.slice(-4)}`;
+  };
+
+  // ฟังก์ชันแปลงชื่อลูกค้า เช่น สมชาย -> ส**าย
+  const maskName = (name?: string) => {
+    if (!name) return '-';
+    const clean = name.trim();
+    if (clean.length <= 2) return clean;
+    return `${clean[0]}${'*'.repeat(Math.min(clean.length - 2, 4))}${clean[clean.length - 1]}`;
+  };
+
   return (
-    <div className="min-h-screen bg-[#f5f5f5] text-[#111111] font-sans antialiased p-4 sm:p-8">
-      <div className="max-w-3xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between bg-white p-4 sm:p-6 rounded-3xl border border-[#e5e5e5] shadow-xs">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="p-2 rounded-full hover:bg-[#f5f5f5] transition-all">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="text-lg sm:text-xl font-black uppercase tracking-tight">คำสั่งซื้อของฉัน</h1>
-              <p className="text-xs text-gray-500">
-                {currentUser ? `บัญชี IG: @${currentUser.ig_username}` : 'กรุณาเข้าสู่ระบบ'}
-              </p>
-            </div>
-          </div>
-          <Link href="/" className="text-xs font-bold underline">
-            กลับหน้าร้าน
-          </Link>
+    <div className="min-h-screen bg-[#f5f5f5] text-[#111111] font-sans antialiased pb-20 selection:bg-black/10 selection:text-current">
+      
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-white border-b border-[#e5e5e5] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-2xs">
+        <Link href="/" className="flex items-center gap-1.5 text-xs font-bold text-[#707072] hover:text-[#111111] transition-colors">
+          <ArrowLeft className="w-4 h-4" /> กลับหน้าร้าน
+        </Link>
+        <span className="text-base sm:text-lg font-black uppercase tracking-tight">
+          KUISCOOL<span className="text-[#d30005]">Z</span>
+        </span>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 pt-6 space-y-5">
+        <div className="text-center space-y-1">
+          <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-[#111111]">
+            ติดตามพัสดุและคำสั่งซื้อ
+          </h1>
+          <p className="text-xs text-[#707072] font-medium">ค้นหาประวัติการสั่งซื้อด้วยเบอร์โทรศัพท์</p>
         </div>
 
-        {/* Orders Content */}
-        {!currentUser ? (
-          <div className="bg-white p-12 text-center rounded-3xl border border-[#e5e5e5] space-y-3 shadow-xs">
-            <AlertCircle className="w-10 h-10 text-gray-400 mx-auto" />
-            <h3 className="text-base font-bold">คุณยังไม่ได้เข้าสู่ระบบ</h3>
-            <p className="text-xs text-gray-500">กรุณากลับไปหน้าหลักและเข้าสู่ระบบด้วยบัญชี IG เพื่อดูรายการคำสั่งซื้อ</p>
-            <div className="pt-2">
-              <Link href="/" className="inline-block bg-black text-white text-xs font-bold px-6 py-2.5 rounded-full">
-                ไปหน้าเข้าสู่ระบบ
-              </Link>
-            </div>
-          </div>
-        ) : loading ? (
-          <div className="bg-white p-12 text-center rounded-3xl border border-[#e5e5e5]">
-            <p className="text-xs text-gray-500 font-bold">กำลังโหลดประวัติคำสั่งซื้อของคุณ...</p>
+        {/* ฟอร์มค้นหาเบอร์โทร */}
+        <form onSubmit={handleSearchByTel} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="กรอกเบอร์โทรศัพท์ที่ใช้สั่งซื้อ..."
+            value={searchTel}
+            onChange={(e) => setSearchTel(e.target.value)}
+            className="flex-1 bg-white border border-[#cacacb] focus:border-[#111111] rounded-full px-5 py-2.5 text-xs font-medium outline-none transition-all"
+          />
+          <button
+            type="submit"
+            className="bg-[#111111] hover:bg-black text-white px-6 py-2.5 rounded-full text-xs font-bold shrink-0 flex items-center gap-1.5 active:scale-95 transition-all uppercase tracking-wider shadow-xs"
+          >
+            <Search className="w-3.5 h-3.5" /> ค้นหา
+          </button>
+        </form>
+
+        {/* รายการคำสั่งซื้อ */}
+        {loading ? (
+          <div className="text-center py-16 bg-white rounded-3xl border border-[#e5e5e5]">
+            <p className="text-xs font-bold text-[#707072]">กำลังค้นหาข้อมูล...</p>
           </div>
         ) : orders.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-3xl border border-dashed border-gray-300 space-y-2">
-            <Package className="w-10 h-10 text-gray-400 mx-auto" />
-            <h3 className="text-base font-bold">ยังไม่มีรายการสั่งซื้อ</h3>
-            <p className="text-xs text-gray-500">เลือกสินค้าและสั่งซื้อเพื่อติดตามพัสดุได้ที่นี่</p>
-          </div>
+          searched && (
+            <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-[#cacacb] space-y-2">
+              <Package className="w-10 h-10 text-[#cacacb] mx-auto" />
+              <p className="text-xs sm:text-sm font-bold text-[#111111]">ไม่พบประวัติคำสั่งซื้อ</p>
+            </div>
+          )
         ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <div key={order.id} className="bg-white rounded-3xl p-5 border border-[#e5e5e5] space-y-4 shadow-xs">
-                <div className="flex justify-between items-start border-b border-gray-100 pb-3">
-                  <div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                      รหัสออเดอร์ #{order.id.slice(0, 8)}
-                    </span>
-                    <h3 className="font-bold text-sm text-[#111111]">{order.product_title}</h3>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-black text-[#d30005]">฿{Number(order.amount || 0).toLocaleString()}</span>
-                  </div>
-                </div>
+          <div className="space-y-3.5">
+            {orders.map((order) => {
+              const hasTracking = !!order.tracking_number;
+              const trackingUrl = hasTracking ? getTrackingUrl(order.tracking_number, order.courier_name) : '';
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="bg-[#f5f5f5] p-3 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold text-gray-500">ที่อยู่จัดส่ง</span>
-                    <p className="text-gray-700 leading-relaxed line-clamp-2">{order.customer_address}</p>
-                  </div>
-
-                  <div className="bg-[#f5f5f5] p-3 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold text-gray-500">สถานะจัดส่ง</span>
-                    <div className="flex items-center gap-1.5 font-bold">
-                      {order.status === 'SHIPPED' ? (
-                        <span className="text-emerald-600 flex items-center gap-1">
-                          <Truck className="w-3.5 h-3.5" /> จัดส่งแล้ว
-                        </span>
-                      ) : (
-                        <span className="text-amber-600 flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" /> กำลังเตรียมจัดส่ง
-                        </span>
-                      )}
+              return (
+                <div key={order.id} className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e5e5e5] shadow-xs space-y-3.5">
+                  
+                  {/* หัวการ์ดคำสั่งซื้อ */}
+                  <div className="flex justify-between items-center border-b border-[#f5f5f5] pb-3">
+                    <div>
+                      <span className="font-mono font-bold text-xs text-[#111111]">#{order.id?.slice(0, 8)}</span>
+                      <span className="text-[10px] text-[#707072] ml-2">
+                        {order.created_at ? `(${new Date(order.created_at).toLocaleDateString('th-TH')})` : ''}
+                      </span>
                     </div>
-                    {order.tracking_number && (
-                      <div className="pt-1 text-[11px] font-mono font-bold text-black">
-                        เลขพัสดุ: <span className="bg-white px-2 py-0.5 rounded border">{order.tracking_number}</span>
+                    <div className="text-xs sm:text-sm font-black text-[#d30005] tracking-tight">
+                      ฿{Number(order.amount || 0).toLocaleString()}
+                    </div>
+                  </div>
+
+                  {/* รายละเอียดสินค้าและผู้รับ */}
+                  <div className="space-y-1 text-xs">
+                    <div className="font-bold text-[#111111]">{order.product_title}</div>
+                    <div className="text-[#707072] text-[11px]">
+    ผู้รับ: <span className="text-[#111111] font-semibold">{maskName(order.customer_name)}</span> 
+    {order.customer_tel ? ` (${maskPhone(order.customer_tel)})` : ''}
+  </div>
+</div>
+
+                  {/* ส่วนแสดงสถานะและปุ่มติดตามพัสดุ */}
+                  <div className="pt-2.5 border-t border-[#f5f5f5]">
+                    {hasTracking ? (
+                      <div className="bg-[#f5f5f5] border border-[#e5e5e5] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-[#707072]">
+                            <Truck className="w-3.5 h-3.5 text-[#111111]" />
+                            <span>{order.courier_name || 'พัสดุจัดส่ง'}:</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-sm text-[#111111] tracking-wider">
+                              {order.tracking_number}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(order.tracking_number, order.id)}
+                              className="p-1 hover:bg-white rounded-md transition-all text-[#707072] hover:text-[#111111]"
+                              title="คัดลอกเลขพัสดุ"
+                            >
+                              {copiedId === order.id ? (
+                                <Check className="w-3.5 h-3.5 text-[#007d48]" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        <a
+                          href={trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 bg-[#111111] hover:bg-black text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shrink-0 shadow-xs"
+                        >
+                          <span>เช็กพัสดุ</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-[#cacacb]" />
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between text-xs py-1">
+                        <span className="text-[#707072] text-[11px]">สถานะจัดส่ง:</span>
+                        <span className="text-amber-700 font-bold bg-amber-50 border border-amber-200/50 px-3 py-1 rounded-full text-[10px] flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> กำลังเตรียมจัดส่ง
+                        </span>
                       </div>
                     )}
                   </div>
+
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
+      </main>
 
-      </div>
     </div>
   );
 }
