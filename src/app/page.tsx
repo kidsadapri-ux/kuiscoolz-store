@@ -229,7 +229,7 @@ export default function HomePage() {
               href="/my-orders" 
               className="flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#e5e5e5] text-[#111111] px-3.5 py-2 rounded-full transition-all text-[11px] sm:text-xs font-bold active:scale-95"
             >
-              <span className="hidden sm:inline">คำสั่งซื้อ</span>
+              <span className>คำสั่งซื้อ</span>
             </Link>
 
             {currentUser ? (
