@@ -260,16 +260,7 @@ export default function HomePage() {
 
       {/* Mobile Search Bar */}
       <div className="block md:hidden px-4 py-2.5 bg-[#ffffff] border-b border-[#e5e5e5]">
-        <div className="relative flex items-center">
-          <Search className="w-3.5 h-3.5 text-[#707072] absolute left-3.5 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="ค้นหาชื่อเสื้อผ้า, แบรนด์, สเปก..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#f5f5f5] text-[#111111] placeholder-[#707072] text-[12px] font-medium rounded-full pl-9 pr-3.5 py-2 outline-none focus:bg-[#ffffff] focus:ring-1.5 focus:ring-[#111111] transition-all"
-          />
-        </div>
+        
       </div>
 
       {/* 3. HERO CAMPAIGN SECTION */}
