@@ -377,7 +377,7 @@ export default function HomePage() {
               <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-tight text-[#111111]">
                 สินค้าทั้งหมด ({filteredProducts.length})
               </h2>
-              <p className="text-xs text-[#707072] font-medium">คัดสภาพเน้นๆ พร้อมส่งทันที</p>
+              <p className="text-xs text-[#707072] font-medium">เป็นสินค้ามือสองทุกชิ้น</p>
             </div>
           </div>
 

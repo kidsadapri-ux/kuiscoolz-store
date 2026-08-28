@@ -120,19 +120,7 @@ export default function AdminLayout({
               href="/family/products"
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
             >
-              <span>📦</span> จัดการสินค้าทั้งหมด
-            </Link>
-            <Link
-              href="/family/auction"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
-            >
-              <span>🔨</span> จัดการระบบประมูล
-            </Link>
-            <Link
-              href="/family/credits"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
-            >
-              <span>💳</span> จัดการสลิปเครดิต
+              
             </Link>
           </nav>
         </div>

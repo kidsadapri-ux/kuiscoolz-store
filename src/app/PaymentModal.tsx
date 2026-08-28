@@ -137,6 +137,18 @@ if (productId) {
   });
 }
 
+fetch('/api/slots/notify-line', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productTitle: displayTitle,
+          amount: displayAmount,
+          customerName: orderData.user_ig || orderData.customerName || 'ลูกค้า',
+          userIg: orderData.user_ig || orderData.customerName || '-',
+          customerAddress: orderData.customer_address || orderData.shippingAddress || '-',
+        }),
+      }).catch((err) => console.error('Error sending LINE notify:', err));
+
       // แสดง Success UI แทน alert browser
       setIsSuccess(true);
     } catch (err: any) {

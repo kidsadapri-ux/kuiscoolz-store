@@ -135,7 +135,7 @@ export default function MyOrdersPage() {
           <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-[#111111]">
             ติดตามพัสดุและคำสั่งซื้อ
           </h1>
-          <p className="text-xs text-[#707072] font-medium">ค้นหาประวัติการสั่งซื้อด้วยเบอร์โทรศัพท์</p>
+          <p className="text-xs text-[#707072] font-medium"></p>
         </div>
 
         {/* ฟอร์มค้นหาเบอร์โทร */}
