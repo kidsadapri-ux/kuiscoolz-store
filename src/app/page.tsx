@@ -24,31 +24,141 @@ import {
   SearchX, 
   Search,
   Sparkles,
-  ArrowDownRight
+  ArrowDownRight,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iaHZ1eHZ0c2ZpaGRlbHFqem1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MTQ5MDMsImV4cCI6MjEwMjE5MDkwM30.kkVSeL3fK-V5dx0CQRdBRf1UZPd198cDNUrXEjik7qM';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export default function HomePage() {
-  function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
+// คอมโพเนนต์สไลด์เลื่อนดูรูปสินค้า (รองรับทั้งแบบหลายรูป และรูปเดี่ยวเดิม)
+ function ProductImageSlider({ product }: { product: any }) {
+  const imageList: string[] = 
+    product.images && product.images.length > 0 
+      ? product.images 
+      : [product.image || product.image_url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80'];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const prevImage = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setCurrentIndex((prev) => (prev === 0 ? imageList.length - 1 : prev - 1));
+  };
+
+  const nextImage = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setCurrentIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
+  };
+
+  // รองรับการปัดนิ้วบนมือถือ (Touch Events)
+  const minSwipeDistance = 40;
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      nextImage();
+    } else if (isRightSwipe) {
+      prevImage();
+    }
+  };
+
   return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
+    <div 
+      className="relative w-full h-full select-none overflow-hidden rounded-xl touch-pan-y"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-    </svg>
+      <img
+        src={imageList[currentIndex]}
+        alt={product.title || 'Product'}
+        className="w-full h-full object-cover transition-transform duration-300"
+      />
+
+      {imageList.length > 1 && (
+        <>
+          {/* ปุ่มเลื่อนซ้าย-ขวา (แสดงบนคอม หรือกดบนมือถือก็ได้) */}
+          <button
+            type="button"
+            onClick={prevImage}
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black text-white p-1 rounded-full sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 active:scale-90"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={nextImage}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black text-white p-1 rounded-full sm:opacity-0 group-hover:opacity-100 transition-opacity z-10 active:scale-90"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+
+          {/* แถบตัวเลขบอกรูปที่ */}
+          <div className="absolute bottom-2 right-2 bg-black/75 text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10">
+            {currentIndex + 1}/{imageList.length}
+          </div>
+
+          {/* จุด Dots */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full z-10">
+            {imageList.map((_, idx) => (
+              <span
+                key={idx}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setCurrentIndex(idx);
+                }}
+                className={`h-1 rounded-full transition-all cursor-pointer ${
+                  currentIndex === idx ? 'w-3 bg-white' : 'w-1 bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
+
+export default function HomePage() {
+  function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
+    return (
+      <svg 
+        className={className} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      >
+        <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+      </svg>
+    );
+  }
+
   const [products, setProducts] = useState<any[]>([]);
   const [banner, setBanner] = useState({
     title_white: 'KUISCOOLZ',
@@ -179,7 +289,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#111111] font-sans antialiased scroll-smooth">
       
-      {/* 1. TOP UTILITY BAR (ปรับเป็นแถบสีขาว Soft Cloud สไตล์มินิมอลตามรูป)[cite: 1] */}
+      {/* 1. TOP UTILITY BAR */}
       <div className="hidden md:block bg-[#f5f5f5] text-[#111111] text-[12px] font-medium py-2 px-6 sm:px-12 border-b border-[#e5e5e5]">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#707072] font-semibold">
@@ -207,7 +317,6 @@ export default function HomePage() {
 
           {/* Desktop Search */}
           <div className="flex-1 max-w-md hidden md:block">
-
           </div>
 
           {/* Right Action Icons & Auth */}
@@ -229,7 +338,7 @@ export default function HomePage() {
               href="/my-orders" 
               className="flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#e5e5e5] text-[#111111] px-3.5 py-2 rounded-full transition-all text-[11px] sm:text-xs font-bold active:scale-95"
             >
-              <span className>คำสั่งซื้อ</span>
+              <span>คำสั่งซื้อ</span>
             </Link>
 
             {currentUser ? (
@@ -260,7 +369,6 @@ export default function HomePage() {
 
       {/* Mobile Search Bar */}
       <div className="block md:hidden px-4 py-2.5 bg-[#ffffff] border-b border-[#e5e5e5]">
-        
       </div>
 
       {/* 3. HERO CAMPAIGN SECTION */}
@@ -296,14 +404,14 @@ export default function HomePage() {
             </p>
           )}
 
-         <div className="pt-2 flex items-center justify-center">
-  <a
-    href="#products-list"
-    className="bg-[#ffffff] hover:bg-zinc-200 text-[#111111] font-bold text-xs sm:text-sm px-8 py-3.5 rounded-full transition-all active:scale-95 shadow-xl uppercase tracking-wider inline-flex items-center gap-1.5"
-  >
-    <span>เลือกซื้อสินค้า</span> <ArrowDownRight className="w-4 h-4" />
-  </a>
-</div>
+          <div className="pt-2 flex items-center justify-center">
+            <a
+              href="#products-list"
+              className="bg-[#ffffff] hover:bg-zinc-200 text-[#111111] font-bold text-xs sm:text-sm px-8 py-3.5 rounded-full transition-all active:scale-95 shadow-xl uppercase tracking-wider inline-flex items-center gap-1.5"
+            >
+              <span>เลือกซื้อสินค้า</span> <ArrowDownRight className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       </section>
 
@@ -405,16 +513,12 @@ export default function HomePage() {
                   <div key={product.id} className="bg-[#ffffff] rounded-2xl border border-[#e5e5e5] p-2.5 sm:p-3.5 flex flex-col justify-between group hover:border-[#111111] transition-all shadow-xs">
                     
                     <div>
-                      {/* Product Image Stage */}
+                      {/* Product Image Stage (รองรับหลายรูปพร้อมปุ่มเลื่อน) */}
                       <div className="relative aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden">
-                        <img
-                          src={product.image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&q=80'}
-                          alt={product.title || 'Product'}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        <ProductImageSlider product={product} />
                         
                         {/* Grade Badge */}
-                        <div className="absolute top-2 left-2 bg-[#ffffff]/95 backdrop-blur-md text-[#111111] text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#cacacb] shadow-xs">
+                        <div className="absolute top-2 left-2 bg-[#ffffff]/95 backdrop-blur-md text-[#111111] text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#cacacb] shadow-xs z-20 pointer-events-none">
                           {grade === 'GRADE_S' && <span className="text-[#007d48]">เกรด S</span>}
                           {grade === 'GRADE_A' && <span className="text-[#111111]">เกรด A</span>}
                           {grade === 'GRADE_B' && <span className="text-[#707072]">เกรด B</span>}
@@ -422,13 +526,13 @@ export default function HomePage() {
                         </div>
 
                         {acceptedOffer && (
-                          <div className="absolute top-2 right-2 bg-[#111111] text-[#ffffff] text-[8px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                          <div className="absolute top-2 right-2 bg-[#111111] text-[#ffffff] text-[8px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md z-20 pointer-events-none">
                             <Sparkles className="w-2.5 h-2.5 text-[#d30005]" /> ราคาพิเศษ
                           </div>
                         )}
 
                         {isSoldOut && (
-                          <div className="absolute inset-0 bg-white/75 backdrop-blur-xs flex items-center justify-center">
+                          <div className="absolute inset-0 bg-white/75 backdrop-blur-xs flex items-center justify-center z-20">
                             <span className="bg-[#111111] text-[#ffffff] font-bold text-xs px-4 py-1.5 rounded-full uppercase tracking-wider">
                               SOLD OUT
                             </span>
@@ -445,7 +549,7 @@ export default function HomePage() {
                           {product.title}
                         </h3>
                         <div className="text-[10px] sm:text-xs text-[#707072] truncate">
-                           {product.size || 'Free Size'}
+                          {product.size || 'Free Size'}
                         </div>
                         
                         {/* Price Row */}
@@ -462,10 +566,8 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* 4 ACTION BUTTONS (แถบปุ่มกดแบบในภาพ 1: แชต / ถูกใจ / ต่อรอง / สั่งซื้อ)[cite: 1] */}
+                    {/* 4 ACTION BUTTONS */}
                     <div className="grid grid-cols-6 gap-1 pt-2 border-t border-[#f5f5f5]">
-        
-
                       <button
                         type="button"
                         onClick={() => toggleWishlist(product)}

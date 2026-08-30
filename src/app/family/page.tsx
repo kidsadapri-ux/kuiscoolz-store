@@ -35,7 +35,9 @@ export default function AdminFamilyPage() {
   const [previewSlipUrl, setPreviewSlipUrl] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  
+  // เปลี่ยนมารับรูปหลายรูปในรูปแบบ Array
+  const [imagesPreview, setImagesPreview] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     brand: '',
@@ -72,22 +74,35 @@ export default function AdminFamilyPage() {
     fetchData();
   }, []);
 
+  // ฟังก์ชันเลือกรูปหลายรูปพร้อมกัน
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return alert('กรุณาเลือกไฟล์รูปภาพขนาดไม่เกิน 5 MB');
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    Array.from(files).forEach((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`ไฟล์ ${file.name} มีขนาดเกิน 5 MB`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          setImagesPreview((prev) => [...prev, reader.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // ฟังก์ชันลบรูปที่ไม่ต้องการออกจากพรีวิว
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImagesPreview((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.price || !imagePreview) {
-      return alert('กรุณากรอกชื่อสินค้า ราคา และเลือกไฟล์รูปภาพ');
+    if (!formData.title || !formData.price || imagesPreview.length === 0) {
+      return alert('กรุณากรอกชื่อสินค้า ราคา และเลือกรูปภาพอย่างน้อย 1 รูป');
     }
 
     setSaving(true);
@@ -99,7 +114,8 @@ export default function AdminFamilyPage() {
         size: formData.size.trim(),
         category: formData.category,
         condition_grade: formData.conditionGrade,
-        image: imagePreview,
+        image: imagesPreview[0],       // รูปแรกยังเก็บในฟิลด์ image เดิมเพื่อไม่ให้กระทบระบบเก่า
+        images: imagesPreview,         // เก็บ Array ของรูปภาพทั้งหมด
         description: formData.description.trim() || '',
         status: 'AVAILABLE',
       };
@@ -117,7 +133,7 @@ export default function AdminFamilyPage() {
         conditionGrade: 'GRADE_A',
         description: '',
       });
-      setImagePreview('');
+      setImagesPreview([]);
       setIsModalOpen(false);
       fetchData();
     } catch (err: any) {
@@ -271,6 +287,7 @@ export default function AdminFamilyPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {products.map((p) => {
                   const isAvailable = p.status === 'AVAILABLE';
+                  const displayThumb = (p.images && p.images.length > 0) ? p.images[0] : p.image;
                   return (
                     <div 
                       key={p.id} 
@@ -278,7 +295,7 @@ export default function AdminFamilyPage() {
                     >
                       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                         <img 
-                          src={p.image} 
+                          src={displayThumb} 
                           alt={p.title} 
                           className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover border shrink-0 bg-[#f5f5f5]" 
                         />
@@ -513,7 +530,7 @@ export default function AdminFamilyPage() {
         </div>
       )}
 
-      {/* Modal เพิ่มสินค้า */}
+      {/* Modal เพิ่มสินค้า (ปรับใหม่: รองรับหลายรูป + พรีวิว + ลบรูป) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg p-5 sm:p-8 relative shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto">
@@ -524,20 +541,41 @@ export default function AdminFamilyPage() {
             <h3 className="text-base sm:text-xl font-black uppercase text-[#111111]">ลงสินค้าใหม่</h3>
 
             <form onSubmit={handleCreateProduct} className="space-y-3 text-xs">
+              
+              {/* จุดเลือกรูปภาพหลายรูป */}
               <div className="border-2 border-dashed border-gray-300 rounded-2xl p-3 text-center bg-[#f5f5f5]">
-                {imagePreview ? (
+                {imagesPreview.length > 0 ? (
                   <div className="space-y-2">
-                    <img src={imagePreview} alt="Preview" className="w-24 h-24 sm:w-32 sm:h-32 object-cover mx-auto rounded-xl" />
-                    <label className="inline-block bg-white border border-gray-300 font-bold px-3 py-1 rounded-full cursor-pointer text-[10px]">
-                      เปลี่ยนรูป
-                      <input type="file" accept="image/*" onChange={handleImageFileChange} className="hidden" />
+                    <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
+                      {imagesPreview.map((src, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 bg-white">
+                          <img src={src} alt="Preview" className="w-full h-full object-cover" />
+                          {idx === 0 && (
+                            <span className="absolute bottom-1 left-1 bg-black/80 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
+                              รูปหลัก
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-90 hover:opacity-100"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <label className="inline-block bg-white border border-gray-300 font-bold px-3 py-1 rounded-full cursor-pointer text-[10px] hover:bg-gray-100 transition-colors">
+                      + เพิ่มรูปอีก
+                      <input type="file" multiple accept="image/*" onChange={handleImageFileChange} className="hidden" />
                     </label>
                   </div>
                 ) : (
-                  <label className="cursor-pointer block py-3 space-y-1">
+                  <label className="cursor-pointer block py-4 space-y-1">
                     <ImageIcon className="w-8 h-8 text-gray-400 mx-auto" />
-                    <div className="font-bold text-gray-700 text-xs">เลือกรูปภาพจากเครื่อง</div>
-                    <input type="file" accept="image/*" onChange={handleImageFileChange} className="hidden" />
+                    <div className="font-bold text-gray-700 text-xs">เลือกรูปภาพจากเครื่อง (เลือกได้หลายรูป)</div>
+                    <div className="text-[10px] text-gray-400">รูปแรกจะเป็นรูปปกหลัก</div>
+                    <input type="file" multiple accept="image/*" onChange={handleImageFileChange} className="hidden" />
                   </label>
                 )}
               </div>
@@ -583,7 +621,7 @@ export default function AdminFamilyPage() {
                 </select>
               </div>
 
-              <button type="submit" disabled={saving} className="w-full bg-[#111111] text-white font-bold py-3 rounded-full uppercase mt-2">
+              <button type="submit" disabled={saving} className="w-full bg-[#111111] text-white font-bold py-3 rounded-full uppercase mt-2 active:scale-95 transition-all">
                 {saving ? 'กำลังบันทึก...' : 'ลงสินค้าทันที'}
               </button>
             </form>

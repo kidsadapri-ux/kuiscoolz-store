@@ -27,22 +27,75 @@ export default function MyOrdersPage() {
   const [searched, setSearched] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // ฟังก์ชันสร้าง Direct Link ไปยังระบบเช็กพัสดุอัตโนมัติ
+  // ฟังก์ชันวิเคราะห์แท็กขนส่งและเปิดไปยังหน้าเช็กพัสดุของค่ายนั้นๆ อัตโนมัติ
   const getTrackingUrl = (trackingNumber: string, courierName?: string) => {
-    const cleanTrack = trackingNumber.trim();
-    const courier = (courierName || '').toLowerCase();
+    if (!trackingNumber) return '#';
+    const raw = trackingNumber.trim();
+    const text = `${courierName || ''} ${raw}`.toLowerCase();
+    
+    // ดึงเฉพาะรหัสเลขพัสดุ (ตัดคำนำหน้า เช่น Flash:, Kerry:, J&T:)
+    const cleanCode = raw.replace(/^[a-zA-Z\sก-๙&]+[:\s-]*/, '').trim() || raw;
 
-    if (courier.includes('flash') || cleanTrack.startsWith('TH')) {
-      return `https://www.flashexpress.co.th/tracking/?se=${cleanTrack}`;
+    // 1. J&T Express (รองรับทั้งคำนำหน้า j&t, jnt, jt, เจแอนด์ที หรือเลข 12 หลัก)
+    if (
+      text.includes('j&t') || 
+      text.includes('jnt') || 
+      text.includes('jt') || 
+      text.includes('เจแอนด์ที') || 
+      /^\d{12}$/.test(cleanCode) ||
+      /^8\d{11}/.test(cleanCode)
+    ) {
+      return `https://www.jtexpress.co.th/service/track?bills=${cleanCode}`;
     }
-    if (courier.includes('ems') || courier.includes('thai post') || /^[A-Z]{2}\d{9}TH$/i.test(cleanTrack)) {
-      return `https://track.thailandpost.co.th/?trackNumber=${cleanTrack}`;
+
+    // 2. Flash Express
+    if (text.includes('flash') || text.includes('แฟลช') || /^th\d+/i.test(cleanCode)) {
+      return `https://www.flashexpress.co.th/tracking/?se=${cleanCode}`;
     }
-    return `https://www.flashexpress.co.th/tracking/?se=${cleanTrack}`;
+    
+    // 3. Kerry Express / KEX
+    if (text.includes('kerry') || text.includes('kex') || text.includes('เคอรี่') || /^kex\d+/i.test(cleanCode) || /^sh\d+/i.test(cleanCode)) {
+      return `https://th.kerryexpress.com/th/track/?track=${cleanCode}`;
+    }
+
+    // 4. ไปรษณีย์ไทย (Thailand Post / EMS / ลงทะเบียน)
+    if (text.includes('ems') || text.includes('thai post') || text.includes('ไปรษณีย์') || text.includes('thp') || /^[A-Z]{2}\d{9}TH$/i.test(cleanCode)) {
+      return `https://track.thailandpost.co.th/?trackNumber=${cleanCode}`;
+    }
+
+    // 5. Shopee Xpress (SPX)
+    if (text.includes('spx') || text.includes('shopee') || /^th\d{12}[a-z0-9]/i.test(cleanCode)) {
+      return `https://spx.co.th/m/track?tracking_number=${cleanCode}`;
+    }
+
+    // 6. Ninja Van
+    if (text.includes('ninja') || text.includes('นินจา')) {
+      return `https://www.ninjavan.co/th-th/tracking?id=${cleanCode}`;
+    }
+
+    // 7. Best Express
+    if (text.includes('best') || text.includes('เบส')) {
+      return `https://www.best-inc.co.th/track?bills=${cleanCode}`;
+    }
+
+    // 8. DHL Express / eCommerce
+    if (text.includes('dhl')) {
+      return `https://www.dhl.com/th-th/home/tracking/tracking-express.html?submit=1&tracking-id=${cleanCode}`;
+    }
+
+    // 9. SCG Express
+    if (text.includes('scg')) {
+      return `https://www.scgexpress.co.th/tracking/detail/${cleanCode}`;
+    }
+
+    // หากไม่ตรงกับข้างต้น -> นำไปค้นหาบน Google ให้ทันที
+    return `https://www.google.com/search?q=เช็คพัสดุ+${encodeURIComponent(cleanCode)}`;
   };
 
   const handleCopy = (trackNo: string, orderId: string) => {
-    navigator.clipboard.writeText(trackNo);
+    // กรองเอาเฉพาะตัวเลขพัสดุเพื่อความสะดวกเวลาผู้ใช้นำไปวาง
+    const cleanCode = trackNo.replace(/^[a-zA-Z\sก-๙&]+[:\s-]*/, '').trim() || trackNo;
+    navigator.clipboard.writeText(cleanCode);
     setCopiedId(orderId);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -102,6 +155,7 @@ export default function MyOrdersPage() {
       setLoading(false);
     }
   };
+
   const maskPhone = (phone?: string) => {
     if (!phone) return '-';
     const clean = phone.replace(/[^0-9]/g, '');
@@ -135,25 +189,8 @@ export default function MyOrdersPage() {
           <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-[#111111]">
             ติดตามพัสดุและคำสั่งซื้อ
           </h1>
-          <p className="text-xs text-[#707072] font-medium"></p>
+          <p className="text-xs text-[#707072] font-medium">ตรวจสอบสถานะและเลขพัสดุจัดส่งสินค้า</p>
         </div>
-
-        {/* ฟอร์มค้นหาเบอร์โทร */}
-        <form onSubmit={handleSearchByTel} className="flex gap-2">
-          <input
-            type="text"
-            placeholder="กรอกเบอร์โทรศัพท์ที่ใช้สั่งซื้อ..."
-            value={searchTel}
-            onChange={(e) => setSearchTel(e.target.value)}
-            className="flex-1 bg-white border border-[#cacacb] focus:border-[#111111] rounded-full px-5 py-2.5 text-xs font-medium outline-none transition-all"
-          />
-          <button
-            type="submit"
-            className="bg-[#111111] hover:bg-black text-white px-6 py-2.5 rounded-full text-xs font-bold shrink-0 flex items-center gap-1.5 active:scale-95 transition-all uppercase tracking-wider shadow-xs"
-          >
-            <Search className="w-3.5 h-3.5" /> ค้นหา
-          </button>
-        </form>
 
         {/* รายการคำสั่งซื้อ */}
         {loading ? (
@@ -193,10 +230,10 @@ export default function MyOrdersPage() {
                   <div className="space-y-1 text-xs">
                     <div className="font-bold text-[#111111]">{order.product_title}</div>
                     <div className="text-[#707072] text-[11px]">
-    ผู้รับ: <span className="text-[#111111] font-semibold">{maskName(order.customer_name)}</span> 
-    {order.customer_tel ? ` (${maskPhone(order.customer_tel)})` : ''}
-  </div>
-</div>
+                      ผู้รับ: <span className="text-[#111111] font-semibold">{maskName(order.customer_name)}</span> 
+                      {order.customer_tel ? ` (${maskPhone(order.customer_tel)})` : ''}
+                    </div>
+                  </div>
 
                   {/* ส่วนแสดงสถานะและปุ่มติดตามพัสดุ */}
                   <div className="pt-2.5 border-t border-[#f5f5f5]">

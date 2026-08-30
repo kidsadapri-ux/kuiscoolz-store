@@ -45,7 +45,7 @@ export default function WishlistModal({
             <div className="text-center py-12 space-y-2">
               <Heart className="w-12 h-12 text-gray-200 mx-auto" />
               <p className="text-xs font-bold text-gray-400">ยังไม่มีรายการที่บันทึกไว้</p>
-              <p className="text-[11px] text-gray-300">กดไอคอนหัวใจที่รูปสินค้าเพื่อบันทึกไว้ดูภายหลังได้ครับ</p>
+              <p className="text-[11px] text-gray-300"></p>
             </div>
           ) : (
             wishlist.map((item) => (
