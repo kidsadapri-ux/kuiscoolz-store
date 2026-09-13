@@ -1,8 +1,75 @@
 'use client';
 
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '../../context/StoreContext';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
+
+function AdminProductThumbnailSlider({ item }: { item: any }) {
+  const images: string[] =
+    item.images && item.images.length > 0
+      ? item.images
+      : item.image
+      ? [item.image]
+      : [];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (images.length === 0) {
+    return (
+      <div className="w-12 h-12 rounded-lg border bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
+        <ImageIcon className="w-5 h-5" />
+      </div>
+    );
+  }
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <div className="relative w-12 h-12 rounded-lg border overflow-hidden shrink-0 group bg-gray-100 select-none">
+      <img
+        src={images[currentIndex]}
+        alt={item.title || 'Product'}
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={handlePrev}
+            className="absolute left-0.5 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            title="รูปก่อนหน้า"
+          >
+            <ChevronLeft className="w-3 h-3" />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleNext}
+            className="absolute right-0.5 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            title="รูปถัดไป"
+          >
+            <ChevronRight className="w-3 h-3" />
+          </button>
+
+          <span className="absolute bottom-0.5 right-0.5 bg-black/80 text-[8px] text-white px-1 rounded font-mono pointer-events-none">
+            {currentIndex + 1}/{images.length}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function AdminProductsPage() {
   const { products, toggleSoldOut, deleteProduct } = useStore();
@@ -37,11 +104,11 @@ export default function AdminProductsPage() {
             {products.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50">
                 <td className="p-4 font-black flex items-center gap-3">
-                  <img src={item.image} alt={item.title} className="w-10 h-10 object-cover rounded-lg border" />
+                  <AdminProductThumbnailSlider item={item} />
                   <span className="line-clamp-1">{item.title}</span>
                 </td>
                 <td className="p-4 text-gray-600">{item.category} • {item.size}</td>
-                <td className="p-4 font-black">฿{item.price.toLocaleString()}</td>
+                <td className="p-4 font-black">฿{Number(item.price || 0).toLocaleString()}</td>
                 <td className="p-4">
                   {item.status === 'AVAILABLE' ? (
                     <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-md">

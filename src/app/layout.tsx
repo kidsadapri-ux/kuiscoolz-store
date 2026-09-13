@@ -3,7 +3,7 @@ import { StoreProvider } from './context/StoreContext';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'KUISCOOLZ — ร้านที่ให้มากกว่าแฟชั่น',
+  title: 'BILLIONX — ร้านที่ให้มากกว่าแฟชั่น',
   description: 'รับประกันของแท้ทุกชิ้น',
 };
 

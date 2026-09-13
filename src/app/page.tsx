@@ -19,22 +19,21 @@ import {
   Handshake, 
   X, 
   MessageCircle, 
-  ShoppingBag,
+  ShoppingBag, 
   ShieldCheck, 
   SearchX, 
-  Search,
-  Sparkles,
-  ArrowDownRight,
-  ChevronLeft,
-  ChevronRight
+  Search, 
+  Sparkles, 
+  ArrowDownRight, 
+  ChevronLeft, 
+  ChevronRight 
 } from 'lucide-react';
 
 const supabaseUrl = 'https://obhvuxvtsfihdelqjzmo.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iaHZ1eHZ0c2ZpaGRlbHFqem1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MTQ5MDMsImV4cCI6MjEwMjE5MDkwM30.kkVSeL3fK-V5dx0CQRdBRf1UZPd198cDNUrXEjik7qM';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// คอมโพเนนต์สไลด์เลื่อนดูรูปสินค้า (รองรับทั้งแบบหลายรูป และรูปเดี่ยวเดิม)
- function ProductImageSlider({ product }: { product: any }) {
+function ProductImageSlider({ product }: { product: any }) {
   const imageList: string[] = 
     product.images && product.images.length > 0 
       ? product.images 
@@ -60,7 +59,6 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
     setCurrentIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
   };
 
-  // รองรับการปัดนิ้วบนมือถือ (Touch Events)
   const minSwipeDistance = 40;
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
@@ -83,7 +81,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   return (
     <div 
-      className="relative w-full h-full select-none overflow-hidden rounded-xl touch-pan-y"
+      className="relative w-full h-full select-none overflow-hidden rounded-xl touch-pan-y bg-[#f0f0f0]"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -91,12 +89,13 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
       <img
         src={imageList[currentIndex]}
         alt={product.title || 'Product'}
+        loading="lazy"
+        decoding="async"
         className="w-full h-full object-cover transition-transform duration-300"
       />
 
       {imageList.length > 1 && (
         <>
-          {/* ปุ่มเลื่อนซ้าย-ขวา (แสดงบนคอม หรือกดบนมือถือก็ได้) */}
           <button
             type="button"
             onClick={prevImage}
@@ -113,12 +112,10 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
 
-          {/* แถบตัวเลขบอกรูปที่ */}
           <div className="absolute bottom-2 right-2 bg-black/75 text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-md z-10">
             {currentIndex + 1}/{imageList.length}
           </div>
 
-          {/* จุด Dots */}
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full z-10">
             {imageList.map((_, idx) => (
               <span
@@ -161,7 +158,7 @@ export default function HomePage() {
 
   const [products, setProducts] = useState<any[]>([]);
   const [banner, setBanner] = useState({
-    title_white: 'KUISCOOLZ',
+    title_white: 'BILLIONX',
     subtitle: 'รับประกันแท้ทุกชิ้น ',
     image_url: '/images.jpg',
   });
@@ -188,13 +185,23 @@ export default function HomePage() {
 
   const fetchData = async (userIg?: string) => {
     try {
-      setLoading(true);
       const [prodRes, bannerRes] = await Promise.all([
-        supabase.from('products').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('products')
+          .select('id, title, brand, price, category, size, condition_grade, image, images, status, allow_offers, created_at')
+          .order('created_at', { ascending: false })
+          .limit(30),
         supabase.from('news_banners').select('*').eq('id', 'main_banner').maybeSingle()
       ]);
 
-      if (prodRes.data) setProducts(prodRes.data);
+      if (prodRes.error) {
+        console.error('Products fetch error:', prodRes.error);
+      }
+
+      if (prodRes.data && prodRes.data.length > 0) {
+        setProducts(prodRes.data);
+      }
+
       if (bannerRes.data) setBanner(bannerRes.data);
 
       const targetIg = userIg || currentUser?.ig_username;
@@ -293,10 +300,10 @@ export default function HomePage() {
       <div className="hidden md:block bg-[#f5f5f5] text-[#111111] text-[12px] font-medium py-2 px-6 sm:px-12 border-b border-[#e5e5e5]">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#707072] font-semibold">
-            <InstagramIcon className="w-3.5 h-3.5 text-[#d30005]" /> @kuisccolz
+            <InstagramIcon className="w-3.5 h-3.5 text-[#d30005]" /> @_billion.x
           </div>
           <div className="text-center font-bold tracking-[0.15em] text-[#111111] text-[11px] uppercase">
-            KUISCOOL<span className="text-[#d30005]">Z</span>
+            BILLIONX<span className="text-[#d30005]"></span>
             <span className="mx-2 text-[#cacacb]">|</span>
             <span className="font-normal text-[#707072]">ร้านที่ให้มากกว่าแฟชั่น</span>
           </div>
@@ -311,15 +318,13 @@ export default function HomePage() {
           
           <Link href="/" className="inline-flex items-center shrink-0">
             <span className="text-xl sm:text-[26px] font-black tracking-tighter text-[#111111] uppercase leading-none">
-              KUISCOOL<span className="text-[#d30005]">Z</span>
+              BILLIONX<span className="text-[#d30005]"></span>
             </span>
           </Link>
 
-          {/* Desktop Search */}
           <div className="flex-1 max-w-md hidden md:block">
           </div>
 
-          {/* Right Action Icons & Auth */}
           <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold shrink-0">
             <button
               onClick={() => setIsWishlistOpen(true)}
@@ -513,11 +518,10 @@ export default function HomePage() {
                   <div key={product.id} className="bg-[#ffffff] rounded-2xl border border-[#e5e5e5] p-2.5 sm:p-3.5 flex flex-col justify-between group hover:border-[#111111] transition-all shadow-xs">
                     
                     <div>
-                      {/* Product Image Stage (รองรับหลายรูปพร้อมปุ่มเลื่อน) */}
+                      {/* Product Image Stage (รองรับหลายรูปพร้อมปุ่มเลื่อนและปัดหน้าจอ) */}
                       <div className="relative aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden">
                         <ProductImageSlider product={product} />
                         
-                        {/* Grade Badge */}
                         <div className="absolute top-2 left-2 bg-[#ffffff]/95 backdrop-blur-md text-[#111111] text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#cacacb] shadow-xs z-20 pointer-events-none">
                           {grade === 'GRADE_S' && <span className="text-[#007d48]">เกรด S</span>}
                           {grade === 'GRADE_A' && <span className="text-[#111111]">เกรด A</span>}
@@ -540,7 +544,6 @@ export default function HomePage() {
                         )}
                       </div>
 
-                      {/* Product Metadata */}
                       <div className="pt-3 pb-2 space-y-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-[#707072] truncate">
                           {product.brand || 'General'} • {product.category || 'Fashion'}
@@ -552,7 +555,6 @@ export default function HomePage() {
                           {product.size || 'Free Size'}
                         </div>
                         
-                        {/* Price Row */}
                         <div className="pt-1 flex items-baseline gap-1.5">
                           <span className={`text-base sm:text-lg font-black ${acceptedOffer ? 'text-[#d30005]' : 'text-[#111111]'}`}>
                             ฿{finalPrice.toLocaleString()}
@@ -566,7 +568,6 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* 4 ACTION BUTTONS */}
                     <div className="grid grid-cols-6 gap-1 pt-2 border-t border-[#f5f5f5]">
                       <button
                         type="button"
@@ -628,10 +629,10 @@ export default function HomePage() {
         <div className="max-w-[1440px] mx-auto px-4 sm:px-12 space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <span className="text-xl font-black uppercase text-[#ffffff] tracking-tight">
-              KUISCOOL<span className="text-[#d30005]">Z</span>
+              BILLIONX<span className="text-[#d30005]"></span>
             </span>
             <div className="flex items-center gap-6 font-semibold">
-              <a href="https://instagram.com/kuiscoolz" target="_blank" rel="noopener noreferrer" className="text-[#ffffff] hover:underline">
+              <a href="https://instagram.com/_billion.x" target="_blank" rel="noopener noreferrer" className="text-[#ffffff] hover:underline">
                 Instagram
               </a>
               <Link href="/my-orders" className="text-[#ffffff] hover:underline">
@@ -640,7 +641,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-zinc-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px]">
-            <p>© 2026 KUISCOOLZ. ALL RIGHTS RESERVED.</p>
+            <p>© 2026 BILLIONX. ALL RIGHTS RESERVED.</p>
             <p className="text-zinc-500">AUTHENTIC STREETWEAR & VINTAGE APPAREL</p>
           </div>
         </div>

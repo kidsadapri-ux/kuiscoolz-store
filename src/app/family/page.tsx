@@ -214,7 +214,7 @@ export default function AdminFamilyPage() {
           </Link>
           <div>
             <h1 className="text-base sm:text-xl font-black uppercase tracking-tight leading-none">
-              KUISCOOL<span className="text-[#ff0000]">Z</span>
+              BILLIONX<span className="text-[#ff0000]"></span>
             </h1>
             <p className="text-[9px] sm:text-[10px] text-gray-400 font-mono">ระบบจัดการหลังบ้าน</p>
           </div>

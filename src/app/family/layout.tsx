@@ -59,7 +59,7 @@ export default function AdminLayout({
         >
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-black tracking-wider text-red-500">
-              KUISCOOLZ
+              BILLIONX
             </h1>
             <p className="text-xs uppercase tracking-widest text-zinc-400 font-semibold">
               Admin Access Lock
@@ -101,7 +101,7 @@ export default function AdminLayout({
         <div className="space-y-8">
           <div>
             <h1 className="text-2xl font-black italic tracking-wider text-white">
-              KUISCOOLZ
+              BILLIONX
             </h1>
             <p className="text-[10px] text-zinc-400 tracking-widest font-bold mt-0.5">
               ADMIN CONTROL CENTER
@@ -146,7 +146,7 @@ export default function AdminLayout({
         {/* Header แถบด้านบน */}
         <header className="h-16 border-b border-zinc-200 px-8 flex items-center justify-between bg-white shrink-0">
           <div className="text-xs text-zinc-500 font-medium">
-            ระบบจัดการหลังบ้าน • <span className="font-bold text-zinc-800">KUISCOOLZ OFFICIAL</span>
+            ระบบจัดการหลังบ้าน • <span className="font-bold text-zinc-800">BILLIONX OFFICIAL</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="bg-emerald-100 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1 border border-emerald-200">

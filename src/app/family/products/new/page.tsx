@@ -24,16 +24,50 @@ export default function AdminNewProductPage() {
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ฟังก์ชันย่อขนาดและปรับความคมชัดของภาพ
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1000; // ความกว้างสูงสุด 1000px
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(img.src);
+
+          ctx.drawImage(img, 0, 0, width, height);
+          // ปรับความคมชัดระดับ 80% (0.8)
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = () => resolve(reader.result as string);
+      };
+    });
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setImagePreview(result);
-        setFormData({ ...formData, image: result });
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file);
+        setImagePreview(compressedBase64);
+        setFormData((prev) => ({ ...prev, image: compressedBase64 }));
+      } catch (err) {
+        console.error('Error compressing image:', err);
+      }
     }
   };
 
@@ -69,7 +103,7 @@ export default function AdminNewProductPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-black italic tracking-wider uppercase text-black flex items-center gap-2">
-              <Plus className="w-6 h-6 text-red-600" /> เพิ่มสินค้าใหม่ของร้าน (KUISCOOLZ Official)
+              <Plus className="w-6 h-6 text-red-600" /> เพิ่มสินค้าใหม่ของร้าน (BILLIONX Official)
             </h1>
             <p className="text-xs text-gray-500 font-bold">
               กรอกสเปกสัดส่วนวัดจริงและอัปโหลดรูปถ่ายสินค้าเพื่อนำไปขึ้นแสดงในหน้าแรก

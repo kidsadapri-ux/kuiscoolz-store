@@ -33,7 +33,7 @@ export default function ProductReviews() {
 
         {/* Right: Instagram Profile Direct Card */}
         <a
-          href="https://instagram.com/kuiscoolz.credits"
+          href="https://instagram.com/billionx.credits"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-[#ffffff] hover:border-[#111111] transition-all p-4 rounded-xl border border-[#cacacb] shadow-xs flex items-center gap-4 w-full md:w-auto shrink-0 group active:scale-95"
@@ -44,7 +44,7 @@ export default function ProductReviews() {
           <div className="text-left space-y-0.5">
             <div className="text-[10px] uppercase font-bold text-[#707072]">Credits Instagram</div>
             <div className="text-xs sm:text-sm font-black text-[#111111] group-hover:text-[#d30005] transition-colors flex items-center gap-1">
-              @kuiscoolz.credits
+              @billionx.credits
               <ExternalLink className="w-3.5 h-3.5 text-[#707072]" />
             </div>
           </div>

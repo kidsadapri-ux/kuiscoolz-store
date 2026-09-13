@@ -180,7 +180,7 @@ export default function MyOrdersPage() {
           <ArrowLeft className="w-4 h-4" /> กลับหน้าร้าน
         </Link>
         <span className="text-base sm:text-lg font-black uppercase tracking-tight">
-          KUISCOOL<span className="text-[#d30005]">Z</span>
+          BILLIONX<span className="text-[#d30005]"></span>
         </span>
       </header>
 
